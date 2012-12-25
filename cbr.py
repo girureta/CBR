@@ -7,6 +7,8 @@ class Case:
 		self.data=[]
 		self.name=''
 		self.solution=[]
+	def setData(self,d):
+		self.data=d
 	
 	def f(self,x):
 		print x
@@ -25,6 +27,9 @@ class Case:
 	def __str__(self):
 		
 		return self.name
+	
+	def printData(self):
+		print self.data
 		
 
 class Library:
