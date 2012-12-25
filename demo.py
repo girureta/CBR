@@ -5,6 +5,8 @@ Created on 25/12/2012
 '''
 
 import cbr
+import utils
+
 import math
 import random
 import copy
@@ -44,25 +46,7 @@ def demoTest(numSamples):
         
     return newCases
 
-def dumpCases(fileName,cases):
-    f=open(fileName,'w')
-    
-    for i in cases:
-        f.write(str(i.data[0])+' '+str(i.data[1])+' '+str(i.solution)+'\n')
-    f.close()
 
-def dumpCases2(fileName,cases, numSamples):
-    f=open(fileName,'w')
-    
-    num=1
-    for i in cases:
-        f.write(str(i.data[0])+' '+str(i.data[1])+' '+str(i.solution)+'\n')
-        if num==numSamples:
-            num=1
-            f.write('\n')
-        else:
-            num=num+1
-    f.close()
 def numericalDemo():
     lLib=cbr.Library()
     lLib.cases=demo(1)
@@ -77,7 +61,7 @@ def numericalDemo():
     
     print 'Lib contains '+str(len(lLib.cases))+' cases'
     
-    dumpCases2('test',test,20)
+    utils.dumpCases2('test',test,20)
     
-    dumpCases2('testTarget',demoTest(20),20)
+    utils.dumpCases2('testTarget',demoTest(20),20)
     
