@@ -48,8 +48,10 @@ def demoTest(numSamples):
 
 
 def numericalDemo():
-    lLib=cbr.Library()
+    lLib=cbr.CaseLibrary()
     lLib.cases=demo(1)
+    
+
     
     testTarget=demoTest(20)
     test = []

@@ -32,10 +32,19 @@ class Case:
 		print self.data
 		
 
-class Library:
+class CaseProcessor:
+	#def __init__(self):
+		
+	def transformSolution(self,newCase,oldCase):
+		newCase.solution=oldCase.solution
+
+class CaseLibrary:
+	
+	
 	
 	def __init__(self):
 		self.cases = []
+		self.processor = CaseProcessor()
 		
 	def retrieveCase(self,newCase):
 		sim=-1
@@ -48,9 +57,11 @@ class Library:
 				cCase=case
 		return cCase
 	
-	def transformSolution(self,newCase,oldCase):
-		newCase.solution=oldCase.solution
-	
 	def solveCase(self,newCase):
-		oldCase=self.retrieveCase(newCase)
-		self.transformSolution(newCase,oldCase)
+		if self.processor is not None:
+			oldCase=self.retrieveCase(newCase)
+			self.processor.transformSolution(newCase,oldCase)
+
+
+	
+
