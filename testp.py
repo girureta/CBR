@@ -1,90 +1,76 @@
-
-
 import cbr
-#import random
 import math
-#import copy
-import demo
-
-
 import chess
 
 
-def mhd2d(p1,p2,q1,q2):
-    return math.fabs(p1-q1)-math.fabs(p2-q2)
-
-def getWKing(case):
-    return [case.data[0],case.data[1]]
-
-def getWRook(case):
-    return [case.data[2],case.data[3]]
-
-def getBKing(case):
-    return [case.data[4],case.data[5]]
-
-#demo.numericalDemo()
-
-test=2
-
-if test == 1:
-    m= chess.ChessCase()
-    
-    lib = cbr.CaseLibrary()
-    
-    data=[]
-    chess.readChessData('data/krkopt.data',data)
-    
-    for da in data:
-        c=chess.ChessCase()
-        c.setData(da)
-    
-    
-    print 'fin'
 
 
-if test == 2:
-    m= chess.ChessCase()
+
+data=[]
+
+#lee el dataset
+chess.readChessData('data/krkopt.data',data)
+
+lib = cbr.CaseLibrary()
+
+#convierte el dataset a casos
+cases=[]
+for da in data:
+    c=chess.ChessCase()
+    c.setData(da)
+    cases.append(c)
     
-    lib = cbr.CaseLibrary()
+       
+
+
+#split data
+testSplit=0.7;
     
-    data=[]
-    chess.readChessData('data/krkopt.data',data)
+sizeDataSet=len(cases)
+
+a=int(math.floor(sizeDataSet*testSplit))
+b=int(math.ceil(sizeDataSet*testSplit))
+
+print "train set ",a
+print "test set ",sizeDataSet-b
+
+
+train_set = cases[:a]
+test_set = cases[b:]    
+#################
     
-    for da in data:
-        c=chess.ChessCase()
-        c.setData(da)
+    
+    
+    
+#agregando casos de entrenamiento
+
+#filter draw games
+train_set = [c for c in train_set if c.solution > -1]
+
+lib=chess.ChessCaseLibrary()
+    
+for c in train_set[:1000]:
+    lib.addCase(c)
+    
+
+
+
+  
+#Probando
+    
+for c in test_set[:10]:
         
-        lib.cases.append(c)
+    
+    print "------"
+    
+    print "original", c.data,c.solution
+    best=c.solution
+    c.solution=-666
+    
+    lib.solveCase(c)
+    print "new", c.data,c.solution
+    print "diferencia: ",best-c.solution
     
     
-    print 'Num casos en la libreria: ',len(lib.cases)
-    print 'Generando nuevo dataset'
     
-    mejorJugada=cbr.Case()
-    bestDepth=-9999
-    nuevaJugada=cbr.Case()
-    
-    newFile=  open("data/newDataSet", 'w')
-    for actual in lib.cases[:100]:
-        for test in lib.cases[:1000]:
-            if actual !=test:
-                
-                nuevaJugada.solution=None
-                if mhd2d(actual.data[0],actual.data[1],test.data[0],test.data[1])==1 and (actual.data[2]!=test.data[2] or actual.data[3]!=actual.data[3]) :
-                    nuevaJugada=test
-                    
-                if mhd2d(actual.data[0],actual.data[1],test.data[0],test.data[1])==0 and actual.data[2]==test.data[2] and actual.data[3]!=actual.data[3] :
-                    nuevaJugada=test
-                
-                if mhd2d(actual.data[0],actual.data[1],test.data[0],test.data[1])==0 and actual.data[2]!=test.data[2] and actual.data[3]==actual.data[3] :
-                    nuevaJugada=test
-                    
-                if nuevaJugada is not None and nuevaJugada.solution<bestDepth :
-                    mejorJugada=nuevaJugada
-                    bestDepth=nuevaJugada.solution
-                
-        newFile.write(str(actual.data[0])+","+str(actual.data[1])+","+str(actual.data[2])+","+str(actual.data[3])+","+str(actual.data[4])+","+str(actual.data[5])+","+str(nuevaJugada.data[0])+","+str(nuevaJugada.data[1])+","+str(nuevaJugada.data[2])+","+str(nuevaJugada.data[3])+","+str(nuevaJugada.data[4])+","+str(nuevaJugada.data[5])+'\n')
-             
-    newFile.close()
-    print 'fin2'
-    
+print 'fin3'
