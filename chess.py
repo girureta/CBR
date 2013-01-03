@@ -10,7 +10,7 @@ import cbr
 def letterToCol(letter):
     letters=['a','b','c','d','e','f','g','h']
     
-    n=0
+    n=1
     for l in letters:
         if letter==l:
             return n
@@ -18,7 +18,7 @@ def letterToCol(letter):
         
 def catToInt(cat):
     categories=['draw','zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen']
-    n=0
+    n=-1
     for c in categories:
         if c==cat:
             return n
@@ -45,11 +45,12 @@ class ChessCase(cbr.Case):
         letterToCol(fields[2]),
         int(fields[3]),
         letterToCol(fields[4]),
-        int(fields[5]),
-        catToInt(fields[6]),    
+        int(fields[5])
         ]
     
         self.data=v
+        self.solution=catToInt(fields[6])
+        
         
 
 def readChessData(name,data):   
