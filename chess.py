@@ -28,19 +28,13 @@ def catToInt(cat):
 
 class ChessCase(cbr.Case):
 
-  
-
-    
     #d is a string
     def setData(self,d):
         
-        
         fields=d.split(",",7)
 
-        
         #ignore '\n'
         fields[6]=(fields[6])[0:-1]
-        
         
         v=[
         letterToCol(fields[0]),
@@ -151,26 +145,59 @@ def getValidPlays(case,plays):
     tempCase=ChessCase()
     #white king
     
-    if case.WKingX()>1:
+    xHigher1= case.WKingX()>1
+    yHigher1= case.WKingY()>1
+    
+    xLower8= case.WKingX()<8
+    yLower8= case.WKingY()<8
+    
+    
+     
+    if xHigher1:
         tempCase=copy.deepcopy(case)
         tempCase.SetWKingX(case.WKingX()-1)
         plays.append(tempCase);
     
-    if case.WKingY()>1:
+    if yHigher1:
         tempCase=copy.deepcopy(case)
         tempCase.SetWKingY(case.WKingY()-1)
         plays.append(tempCase);
 
-    if case.WKingX()<8:
+    if xLower8:
         tempCase=copy.deepcopy(case)
         tempCase.SetWKingX(case.WKingX()+1)
         plays.append(tempCase);
 
-    if case.WKingY()<8:
+    if yLower8:
         tempCase=copy.deepcopy(case)
         tempCase.SetWKingY(case.WKingY()+1)
-        plays.append(tempCase);
+        plays.append(tempCase)
+
+	#The king also moves to the corners :)
+    if xHigher1 and yHigher1:
+        tempCase=copy.deepcopy(case)
+        tempCase.SetWKingX(case.WKingX()-1)
+        tempCase.SetWKingY(case.WKingY()-1)
+        plays.append(tempCase)
         
+    if xLower8 and yHigher1:
+        tempCase=copy.deepcopy(case)
+        tempCase.SetWKingX(case.WKingX()+1)
+        tempCase.SetWKingY(case.WKingY()-1)
+        plays.append(tempCase)
+
+    if xLower8 and yLower8:
+        tempCase=copy.deepcopy(case)
+        tempCase.SetWKingX(case.WKingX()+1)
+        tempCase.SetWKingY(case.WKingY()+1)
+        plays.append(tempCase)
+
+    if xHigher1 and yLower8:
+        tempCase=copy.deepcopy(case)
+        tempCase.SetWKingX(case.WKingX()-1)
+        tempCase.SetWKingY(case.WKingY()-8)
+        plays.append(tempCase)
+         
     #RookY
     for i in range(1,9):
         xRook=case.WRookX()
