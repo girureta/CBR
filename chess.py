@@ -64,7 +64,7 @@ class PlayLib():
 class PlayCase():
 
     def __init__(self, play, solution):
-        self.data = play
+        self.currentPlay = play
         self.solution = solution
 
     def getQuality(self):
@@ -193,10 +193,9 @@ class PlayCaseLib(cbr.CaseLibrary):
             f.readline()
             line = f.readline()
         print '...done!\n'
-        
-	def solveCase(self, newCase):
-        retrievedCases = performRetrieval(self, newCase)
-        adaptedCaseSolution = getAdaptedSolution(self, retrievedCases)
+    def solveCase(self, newCase):
+        retrievedCases = self.performRetrieval(newCase)
+        adaptedCaseSolution = getAdaptedSolution(retrievedCases)
  
         return adaptedCaseSolution
 
@@ -204,22 +203,21 @@ class PlayCaseLib(cbr.CaseLibrary):
         dist=[]
 
         for case in self.cases:
-            dist.append(distance(case.data,newCase.data,W))
+            dist.append(distance(case.currentPlay,newCase.currentPlay,W))
         ind=numpy.argsort(dist)
         #print ind
         data=[]
         for k in range(K):
             data.append(dist[ind[k]])
         newCase.setNearest(ind[0:K],data)
+        
+    def performRetrieval(self, newCase, k=1):
+        W=[1,1,1,1,1,1,1,1,0,0]
+        self.KNN(k,newCase,W)
+        indices=newCase.kNN
+        retrievedCases= [self.cases[x] for x in indices]
 
-	def performRetrieval(self, newCase, k=1):
-		W=[1,1,1,1,1,1,1,1,0,0]
-		indices=caseLib.KNN(k,newCase,W)
-		cases= [caseLib.cases[x] for x in indices]
-    
-		for i in range(k):
-			cases.append(choice(caseLib.cases))
-		return cases
+        return retrievedCases
 
 def distance(case, newCase, W):
         D=[]
@@ -237,7 +235,7 @@ def distance(case, newCase, W):
 
 
 
-def getAdaptedSolution(self, retrievedCases):
+def getAdaptedSolution(retrievedCases):
     return retrievedCases[0].solution
 
 

@@ -37,8 +37,8 @@ K=5
 for c in testLib.cases[:1]:
     print "\n"
 
-    print "Problem:", c.data.data, "with depth", c.data.depth
-    print "Or.Move:", c.solution.data, "with depth", c.solution.depth
+    print "CurrentPlay:", c.currentPlay.data, "with depth", c.currentPlay.depth
+    print "Solution:", c.solution.data, "with depth", c.solution.depth
 
     # solutionFound = c.solveCase(trainLib)
     # print "--> Sol:", solutionFound.data, "with depth", solutionFound.depth
@@ -53,10 +53,10 @@ for c in testLib.cases[:1]:
     	0, #Penalization: Rock displaced in diagonal
     	0] #Penalization: King moved more than one space
     #trainLib.KNN(K,c,W)
-    print "The closest ones were: ", c.kNN
+    #print "The closest ones were: ", c.kNN
     
     sol=trainLib.solveCase(c)
  
-    print 'The solution is, ',sol
+    print 'The solution is, ',sol.data
     
 print '\n--Simulation Finished--\n'
