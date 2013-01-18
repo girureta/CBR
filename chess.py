@@ -45,22 +45,6 @@ class Play():
         return L
 
 
-class PlayLib():
-
-    def __init__(self):
-        self.plays = []
-
-    def addPlay(self, play):
-        self.plays.append(play)
-
-    def __str__(self):
-        L = ''
-        for play in plays:
-            L += str(play) + '\n'
-
-        return L
-
-
 class PlayCase():
 
     def __init__(self, play, solution):
