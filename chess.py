@@ -78,11 +78,6 @@ class PlayCase():
         f.write('\n\n')
         f.close()
 
-    def solveCase(self, caseLib):
-        retrievedCases = performRetrieval(self, caseLib)
-        adaptedCaseSolution = getAdaptedSolution(self, retrievedCases)
- 
-        return adaptedCaseSolution
     def convertCase(self):
         #Converts the case in the symmetric form
         dat=[]
@@ -198,8 +193,12 @@ class PlayCaseLib(cbr.CaseLibrary):
             f.readline()
             line = f.readline()
         print '...done!\n'
-
-
+        
+	def solveCase(self, newCase):
+        retrievedCases = performRetrieval(self, newCase)
+        adaptedCaseSolution = getAdaptedSolution(self, retrievedCases)
+ 
+        return adaptedCaseSolution
 
     def KNN(self,K,newCase,W):
         dist=[]
@@ -213,7 +212,14 @@ class PlayCaseLib(cbr.CaseLibrary):
             data.append(dist[ind[k]])
         newCase.setNearest(ind[0:K],data)
 
-
+	def performRetrieval(self, newCase, k=1):
+		W=[1,1,1,1,1,1,1,1,0,0]
+		indices=caseLib.KNN(k,newCase,W)
+		cases= [caseLib.cases[x] for x in indices]
+    
+		for i in range(k):
+			cases.append(choice(caseLib.cases))
+		return cases
 
 def distance(case, newCase, W):
         D=[]
@@ -228,14 +234,7 @@ def distance(case, newCase, W):
 
 
 
-def performRetrieval(self, caseLib, k=1):
-    W=[1,1,1,1,1,1,1,1,0,0]
-    indices=caseLib.KNN(k,caseLib.cases,W)
-    cases= [caseLib.cases[x] for x in indices]
-    
-    for i in range(k):
-        cases.append(choice(caseLib.cases))
-    return cases
+
 
 
 def getAdaptedSolution(self, retrievedCases):

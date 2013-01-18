@@ -52,7 +52,11 @@ for c in testLib.cases[:1]:
     	1, #Distance WK-WR Y
     	0, #Penalization: Rock displaced in diagonal
     	0] #Penalization: King moved more than one space
-    trainLib.KNN(K,c,W)
-    print "asd", c.kNN
+    #trainLib.KNN(K,c,W)
+    print "The closest ones were: ", c.kNN
+    
+    sol=trainLib.solveCase(c)
+ 
+    print 'The solution is, ',sol
     
 print '\n--Simulation Finished--\n'
