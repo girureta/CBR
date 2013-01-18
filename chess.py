@@ -211,7 +211,7 @@ class PlayCaseLib(cbr.CaseLibrary):
         data=[]
         for k in range(K):
             data.append(dist[ind[k]])
-        newCase.setNearest(ind[0:W],data)
+        newCase.setNearest(ind[0:K],data)
 
 
 
@@ -229,7 +229,10 @@ def distance(case, newCase, W):
 
 
 def performRetrieval(self, caseLib, k=1):
-    cases = []
+    W=[1,1,1,1,1,1,1,1,0,0]
+    indices=caseLib.KNN(k,caseLib.cases,W)
+    cases= [caseLib.cases[x] for x in indices]
+    
     for i in range(k):
         cases.append(choice(caseLib.cases))
     return cases
