@@ -220,7 +220,18 @@ def distance(case, newCase, W):
 
 
 def getAdaptedSolution(retrievedCases):
-    return retrievedCases[0].solution
+    
+    best=9999
+    bestIndex=0;
+    
+    ind=0
+    for sol in retrievedCases:
+        if(sol.solution.depth<best):
+            bestIndex=ind
+            best=sol.solution.depth
+        ind+=1
+    
+    return retrievedCases[bestIndex].solution
 
 
 
