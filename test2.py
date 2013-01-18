@@ -11,7 +11,7 @@ print "--CBR Simulation--\n"
 # --- DATA PROCESSING ---
 
 lib = chess.PlayCaseLib()
-#lib.readDatabaseFromTextFile('data/database')
+
 lib.readSymDBFromTextFile('data/symetricDB')
 
 # Split data into training/testing sets
@@ -25,9 +25,15 @@ print "Training set size:", a
 print "Test set size:", sizeDataSet - b
 print "\n"
 
-caseSet = deepcopy(lib.cases)
-shuffle(caseSet)
 
+#caseSet = deepcopy(lib.cases)
+caseSet=lib.cases
+
+#lib is no longer needed
+lib.cases=None
+del(lib)
+
+shuffle(caseSet)
 trainLib = chess.PlayCaseLib(caseSet[:a])
 testLib =  chess.PlayCaseLib(caseSet[b:])    
 
