@@ -1,141 +1,83 @@
+
+
 import cbr
-<<<<<<< HEAD
-from math import floor, ceil
-import chess
-
-
-print "CBR Simulation \n"
-
-
-# --- DATA PROCESSING ---
-
-data = []
-
-# Read the dataset
-chess.readChessData('data/krkopt.data', data)
-
-lib = cbr.CaseLibrary()
-
-# Transform the dataset into CBR cases
-cases = []
-
-for da in data:
-    c = chess.ChessCase()
-    c.setData(da)
-    cases.append(c)
-
-# Split data into training/testing sets
-testSplit = 0.7;
-sizeDataSet = len(cases)
-
-a = int(floor(sizeDataSet * testSplit))
-b = int(ceil(sizeDataSet * testSplit))
-
-print "train set size:", a
-print "test set size:", sizeDataSet - b
-print "\n"
-
-train_set = cases[:a]
-test_set = cases[b:]    
-
-
-# --- TRAINING CBR ---
-
-train_set = [c for c in train_set if c.solution > -1]    # Filter draw games
-
-lib = chess.ChessCaseLibrary()
-=======
+import random
 import math
-import chess
+import copy
+
+def testfunc(x,y):
+    return math.cos(x)+math.sin(y)
+
+def testfunc2(x,y):
+    return (x*x)+(y*y)
+
+def demo(numSamples):
+    print 'Generating '+str(numSamples)+' random cases'
+    newCases = []
+    for i in range(numSamples):
+        tCase=cbr.Case()
+        tCase.name='Case '+str(i)
+        tCase.data=[random.uniform(-5,5),random.uniform(-5,5)]
+        tCase.solution= testfunc(tCase.data[0],tCase.data[1])
+        newCases.append(tCase)
+    return newCases
 
 
-
-
-
-data=[]
-
-#lee el dataset
-chess.readChessData('data/krkopt.data',data)
-
-lib = cbr.CaseLibrary()
-
-#convierte el dataset a casos
-cases=[]
-for da in data:
-    c=chess.ChessCase()
-    c.setData(da)
-    cases.append(c)
+def demoTest(numSamples):
+    newCases = []
+    a=-5
+    b=10
     
-       
-
-
-#split data
-testSplit=0.7;
+    val=1.0/numSamples
     
-sizeDataSet=len(cases)
-
-a=int(math.floor(sizeDataSet*testSplit))
-b=int(math.ceil(sizeDataSet*testSplit))
-
-print "train set ",a
-print "test set ",sizeDataSet-b
-
-
-train_set = cases[:a]
-test_set = cases[b:]    
-#################
-    
-    
-    
-    
-#agregando casos de entrenamiento
-
-#filter draw games
-train_set = [c for c in train_set if c.solution > -1]
-
-lib=chess.ChessCaseLibrary()
->>>>>>> e3fde2adb51347911bac896f0e2f69891eacd1e4
-    
-for c in train_set[:1000]:
-    lib.addCase(c)
-    
-
-<<<<<<< HEAD
-# --- TESTING CBR ---
-print "Some Examples: "
-    
-for c in test_set[:10]:
-    print "\n"
-
-    print "Original:", c.data, c.solution
-    best = c.solution
-    c.solution = -666
-    
-    lib.solveCase(c)
-    print "New:", c.data, c.solution
-    print "Difference: ", best - c.solution
-    
-print '\nSimulation Finished\n'
-=======
-
-
-  
-#Probando
-    
-for c in test_set[:10]:
+    for i in range(numSamples):
+        for j in range(numSamples):
+            tCase=cbr.Case()
+            tCase.name='Case '+str(i)
+            tCase.data=[a+((i*val)*b),a+((j*val)*b)]
+            tCase.solution= testfunc(tCase.data[0],tCase.data[1])
+            newCases.append(tCase)
         
+    return newCases
+
+def dumpCases(fileName,cases):
+    f=open(fileName,'w')
     
-    print "------"
+    for i in cases:
+        f.write(str(i.data[0])+' '+str(i.data[1])+' '+str(i.solution)+'\n')
+    f.close()
+
+def dumpCases2(fileName,cases, numSamples):
+    f=open(fileName,'w')
     
-    print "original", c.data,c.solution
-    best=c.solution
-    c.solution=-666
+    num=1
+    for i in cases:
+        f.write(str(i.data[0])+' '+str(i.data[1])+' '+str(i.solution)+'\n')
+        if num==numSamples:
+            num=1
+            f.write('\n')
+        else:
+            num=num+1
+    f.close()
+
+
+lLib=cbr.Library()
+lLib.cases=demo(1)
+
+
+testTarget=demoTest(20)
+test = []
+
+for i in testTarget:
+    cC=copy.deepcopy(i)
+    lLib.solveCase(cC)
+    test.append(cC)
     
-    lib.solveCase(c)
-    print "new", c.data,c.solution
-    print "diferencia: ",best-c.solution
-    
-    
-    
-print 'fin3'
->>>>>>> e3fde2adb51347911bac896f0e2f69891eacd1e4
+
+
+print 'Lib contains '+str(len(lLib.cases))+' cases'
+
+
+dumpCases2('test',test,20)
+
+dumpCases2('testTarget',demoTest(20),20)
