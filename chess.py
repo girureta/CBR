@@ -207,19 +207,17 @@ class PlayCaseLib(cbr.CaseLibrary):
         for case in self.cases:
             dist.append(distance(case.data,newCase.data,W))
         ind=numpy.argsort(dist)
-        print ind
+        #print ind
         data=[]
         for k in range(K):
             data.append(dist[ind[k]])
-        newCase.setNearest(ind[0:5],data)
+        newCase.setNearest(ind[0:W],data)
 
 
 
 def distance(case, newCase, W):
         D=[]
         DD=[]
-        print case.data
-        print newCase.data
         for Dim in range(len(case.data)):
             dim=Dim-1
             DD.append(abs(case.data[dim]-newCase.data[dim]))
