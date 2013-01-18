@@ -2,6 +2,7 @@
 import cbr
 from copy import deepcopy
 from random import choice
+import numpy
 
 
 # Global constants
@@ -254,6 +255,10 @@ class PlayCase():
         self.solution[4]=letterToCol(self.solution[4])
         self.solution[6]=catToInt(self.solution[6])
 
+    def setNearest(self,index,distance):
+        self.kNN=index
+        self.distances=distance
+
 
 
 class PlayCaseLib(cbr.CaseLibrary):
@@ -299,6 +304,65 @@ class PlayCaseLib(cbr.CaseLibrary):
             line = f.readline()
 
         print '...done!\n'
+    def readSymDBFromTextFile(self, filename): 
+        v=[]
+        f = open(filename, 'r')
+        lastLineReaded = line = f.readline() 
+
+        print 'Reading data....'
+
+        while line != '':
+            #Converts data in Numeric format
+            fields = line.split(",")
+            for i in fields:
+                v.append(int(i))
+            d=v.pop()
+            currentProblemPlay = Play(v,d)
+            v=[]
+
+            line = f.readline()
+            fields = line.split(",")
+            for i in fields:
+                v.append(int(i))
+            d=v.pop()
+            currentSolutionPlay = Play(v,d)
+            v=[]
+
+            currentCase = PlayCase(currentProblemPlay, currentSolutionPlay)
+            self.addCase(currentCase)
+
+            f.readline()
+            line = f.readline()
+        print '...done!\n'
+
+
+
+    def KNN(self,K,newCase,W):
+        dist=[]
+
+        for case in self.cases:
+            dist.append(distance(case.data,newCase.data,W))
+        ind=numpy.argsort(dist)
+        print ind
+        data=[]
+        for k in range(K):
+            data.append(dist[ind[k]])
+        newCase.setNearest(ind[0:5],data)
+
+
+
+def distance(case, newCase, W):
+        D=[]
+        DD=[]
+        print case.data
+        print newCase.data
+        for Dim in range(len(case.data)):
+            dim=Dim-1
+            DD.append(abs(case.data[dim]-newCase.data[dim]))
+            D.append(W[dim]*(abs(case.data[dim]-newCase.data[dim])))
+        sim=sum(D)+W[8]*(DD[5]-DD[1])*(DD[4]-DD[0])+W[9]*(DD[2])*(DD[2]-1)+W[9]*(DD[3])*(DD[3]-1) #similarity measure: sum of weighted distances + penalization for moving the rock in diagonal + penalization for moving the king more than 2 spaces
+
+        return sim
 
 
 # class ChessCase(cbr.Case):
