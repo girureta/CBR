@@ -354,7 +354,7 @@ def getAdaptedSolution(problemPlay, retrievedCases, method=3, consist=True):
         solution = adaptByAveraging(problemPlay, retrievedCases, consist)
     elif method >= 4:
         import extraAdaptationFunctions as extra
-        solution = extra.adapt(problemPlay, retrievedCases, method)
+        solution = extra.adapt(problemPlay, retrievedCases, method, consist)
         if solution is None:
             print "Method unknown, check the adaptation functions file!"
             consistency, method = askForMethod()
