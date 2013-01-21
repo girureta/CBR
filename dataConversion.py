@@ -35,27 +35,8 @@ for currentPlay in lib.plays:
 
         legalPositionsInDB = []
 
-        for checkedPlay in lib.plays:  
-
-            legalKingXMove = abs(currentPlay.WKingX() 
-                                                - checkedPlay.WKingX()) == 1
-            legalKingYMove = abs(currentPlay.WKingY() 
-                                                - checkedPlay.WKingY()) == 1
-            legalKingMove = legalKingYMove ^ legalKingXMove
-            illegalKingMove = legalKingXMove and legalKingYMove
-
-            changeRookX = currentPlay.WRookX() != checkedPlay.WRookX() 
-            changeRookY = currentPlay.WRookY() != checkedPlay.WRookY() 
-            legalRookMove = changeRookX ^ changeRookY
-            illegalRookMove = changeRookY and changeRookY
-
-            legalMove = ((legalRookMove ^ legalKingMove) and not
-                            illegalRookMove and not illegalKingMove)
-
-            coherentBlack = (currentPlay.BKingX() == checkedPlay.BKingX() and
-                             currentPlay.BKingY() == checkedPlay.BKingY()) 
-
-            if legalMove and coherentBlack:
+        for checkedPlay in lib.plays:
+            if currentPlay.checkForConsistenty(checkedPlay):
                 legalPositionsInDB.append(checkedPlay)
 
         depth = 20
