@@ -4,6 +4,7 @@ from random import choice
 from numpy import argsort
 
 
+
 # Global constants
 COLNUMBERS = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6, 'g': 7, 'h': 8}
 
@@ -18,36 +19,27 @@ DEPTH2CAT = {-1: 'draw', 0: 'zero', 1: 'one', 2: 'two', 3: 'three',
               4: 'four', 5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 
               9: 'nine', 10: 'ten', 11: 'eleven', 12: 'twelve', 
               13: 'thirteen', 14: 'fourteen', 15: 'fifteen', 15: 'sixteen'}
- 
 
-
-def letterToCol(letter):
-    return COLNUMBERS[letter]
+BASE_W = [1, 1, 1, 1, 1, 1, 1, 1, 0, 0]
 
 
 
-def catToInt(cat):
-    return DEPTH2NUM[cat]
-
-
-
+# Classes 
 class Play():
-    """ Class for plays in the King VS King + Rook context.
-        Input for initialise: a list with the positions of the peaces in order
-                              [WKingX, WKingY, WRookX, WRookY, BKingX, BKingY]
-    """
 
     def __init__(self, positions, depth=None):
+        """ Input for initialise: a list with the positions of the peaces 
+              with ordering [WKingX, WKingY, WRookX, WRookY, BKingX, BKingY]
+        """
         self.data = positions
         self.depth = depth
-
+        self.gauge = self.getGauge()
 
     def __str__(self):
         L = 'White King: ' + self.readWKingPosition() + "; "
         L += 'White Rook: ' + self.readBKingPosition() + "; "
         L += 'Black King: ' + self.readWRookPosition()
         return L
-
 
     def WKingX(self):
         return self.data[0]
@@ -67,7 +59,6 @@ class Play():
     def BKingY(self):
         return self.data[5]
 
-
     def readWKingPosition(self):
         return '(' + COLNAMES[self.WKingX()] + ',' + str(self.WKingY())+ ')'
 
@@ -77,30 +68,49 @@ class Play():
     def readBKingPosition(self):
         return '(' + COLNAMES[self.BKingX()] + ',' + str(self.BKingY())+ ')'
 
-
     def strForStoring(self):
         L =  str(self.data[0]) + ',' + str(self.data[1]) + ','
         L += str(self.data[2]) + ',' + str(self.data[3]) + ','
-        L += str(self.data[4]) + ',' + str(self.data[5]) + ','   
-        L += str(self.data[6]) + ',' + str(self.data[7]) + ','     
+        L += str(self.data[4]) + ',' + str(self.data[5]) + ',' 
         L += str(self.depth)
         return L
 
+    def getReducedRepresentation(self):
+        """ Returns an invariant-under-simmertries representation of the play
+            as an ReducedPlay object
+        """
 
-    def getSymmetricRepresentation(self):
-        dat = [min(abs(9 - self.data.data[0]), self.data.data[0]), 
-                                                # Distance to nearest side (X)
-               min(abs(9 - self.data.data[1]), self.data.data[1]),
-                                                # Distance to nearest side (Y)
-               self.data.data[0] - self.data.data[2],     # Distance KB-KW (X)
-               self.data.data[1] - self.data.data[3],     # Distance KB-KW (Y)
-               self.data.data[0] - self.data.data[4],     # Distance KB-RW (X)
-               self.data.data[1] - self.data.data[5],     # Distance KB-RW (Y)
-               self.data.data[2] - self.data.data[4],     # Distance KW-RW (X)
-               self.data.data[3] - self.data.data[5]      # Distance KW-RW (Y)
-              ]
-        return dat     
+        distToX = min(abs(9 - self.BKingX()), self.BKingX())
+        distToY = min(abs(9 - self.BKingY()), self.BKingY())
+        BKingWKingX = self.BKingX() - self.WKingX()
+        BKingWKingY = self.BKingY() - self.WKingY()
+        BKingWRookX = self.BKingX() - self.WRookX()
+        BKingWRookY = self.BKingY() - self.WRookY()
+        WKingWRookX = self.WKingX() - self.WRookX()
+        WKingWRookY = self.WKingY() - self.WRookY()
 
+        newData = [distToX, distToY, BKingWKingX, BKingWKingY, BKingWRookX, 
+                BKingWRookY, WKingWRookX, WKingWRookY]
+
+        return ReducedPlay(newData)  
+
+    def getGauge(self):
+        """ Returns the gauge of the play, i.e. the necessearily information
+            to revert a reducedRepresentation projection. The format is a
+            tuple (x-corner, y-corner)
+        """
+
+        if self.BKingX() <= 4:
+            gaugeX = 0
+        else:
+            gaugeX = 1
+
+        if self.BKingY() <= 4:
+            gaugeY = 0
+        else:
+            gaugeY = 1
+
+        return (gaugeX, gaugeY)          
 
     def checkForConsistenty(self, checkedPlay):
         """ Checks if new checkedPlay is a possible configuration after
@@ -130,9 +140,24 @@ class Play():
         else:
             return False
 
-    def getDepth(self):
-        self.depth = askForDepthEvaluation()
-        return self.depth
+
+class ReducedPlay():
+
+    def __init__(self, positions, depth=None):
+        self.data = positions
+        self.depth = depth
+
+    def strForStoring(self):
+        L =  str(self.data[0]) + ',' + str(self.data[1]) + ','
+        L += str(self.data[2]) + ',' + str(self.data[3]) + ','
+        L += str(self.data[4]) + ',' + str(self.data[5]) + ','   
+        L += str(self.data[6]) + ',' + str(self.data[7]) + ','     
+        L += str(self.depth)
+        return L
+
+    def projectOriginalRepresentation(self, gauge):
+        """ Returns the plau in the original representation (Play object)"""
+        pass
 
 
 
@@ -141,11 +166,6 @@ class PlayCase():
     def __init__(self, play, solution):
         self.currentPlay = play
         self.solution = solution
-
-
-    def getQuality(self):
-        return self.solution.depth()
-
 
     def addToFile(self, filename):
         f = open(filename, 'a')
@@ -156,46 +176,26 @@ class PlayCase():
         f.close()
 
 
-    def convertCase(self):
-        """Converts the case in the symmetric form"""
-        self.currentPlay.data = self.currentPlay.getSymmetricRepresentation()
-        self.solution.data = self.solution.getSymmetricRepresentation()
 
+class ReducedPlayCase():
 
-    def NumericBoard(self):
-        self.data[0] = letterToCol(self.data[0])
-        self.data[2] = letterToCol(self.data[2])
-        self.data[4] = letterToCol(self.data[4])
-        self.data[6] = catToInt(self.data[6])
- 
-        self.solution[0] = letterToCol(self.solution[0])
-        self.solution[2] = letterToCol(self.solution[2])
-        self.solution[4] = letterToCol(self.solution[4])
-        self.solution[6] = catToInt(self.solution[6])
+    def __init__(self, play, solution):
+        self.currentPlay = play
+        self.solution = solution
 
+    def addToFile(self, filename):
+        f = open(filename, 'a')
+        f.write(self.data.strForStoring())
+        f.write('\n')
+        f.write(self.solution.strForStoring())
+        f.write('\n\n')
+        f.close()
 
-    def setNearest(self, index, distance):
-        self.kNN = index
-        self.distances = distance
-
-
-    def evaluateSolution(self):
-        if self.currentPlay.depth is None or self.solution.depth is None:
-            depthConsistency = self.solution.getDepth()
-            if depthConsistency == None:
-                return None
-        else: 
-            if self.currentPlay.depth > self.solution.depth:
-                depthConsistency = 1
-            else:
-                depthConsistency = 0
-
-        if self.currentPlay.checkForConsistenty(self.solution):
-            playConsistency = 1
-        else:
-            playConsistency = 0
-
-        return depthConsistency + playConsistency
+    def projectOriginalRepresentation(self, gauge):
+        """ Projects the case to the original representation (Case object)"""
+        fPlay = projectOriginalRepresentation(gauge)
+        fSol = projectOriginalRepresentation(gauge) 
+        return PlayCase(fPlay, fSol) 
 
 
 
@@ -203,11 +203,12 @@ class PlayCaseLib(cbr.CaseLibrary):
     
     def __init__(self, cases=[]):
         self.cases = cases
-        
 
     def addCase(self, case):
+        """ Adds the case to the lib. This function do not store the case in 
+            a file. For that, storeCase() can be used.
+        """
         self.cases.append(case)
-
 
     def readDatabaseFromTextFile(self, filename):  
 
@@ -217,23 +218,30 @@ class PlayCaseLib(cbr.CaseLibrary):
         print 'Reading data....'
 
         while line != '':
-            #Converts data in Numeric format
+
             fields = line.split(",", 7)
-            v = [letterToCol(fields[0]), int(fields[1]),
-                 letterToCol(fields[2]), int(fields[3]),
-                 letterToCol(fields[4]), int(fields[5])]
+
+            v = [COLNUMBERS[fields[0]], int(fields[1]),
+                 COLNUMBERS[fields[2]], int(fields[3]),
+                 COLNUMBERS[fields[4]], int(fields[5])]
+
             fields[6] = (fields[6])[0:-1]               # Ignore '\n'
-            d = catToInt(fields[6])
+
+            d = DEPTH2NUM[fields[6]]
 
             currentProblemPlay = Play(v,d)
 
             line = f.readline()
+
             fields = line.split(",", 7)
-            v = [letterToCol(fields[0]), int(fields[1]),
-                 letterToCol(fields[2]), int(fields[3]),
-                 letterToCol(fields[4]), int(fields[5])]
+
+            v = [COLNUMBERS[fields[0]], int(fields[1]),
+                 COLNUMBERS[fields[2]], int(fields[3]),
+                 COLNUMBERS[fields[4]], int(fields[5])]
+
             fields[6] = (fields[6])[0:-1]
-            d = catToInt(fields[6])
+
+            d = DEPTH2NUM[fields[6]]
 
             currentSolutionPlay = Play(v,d)
 
@@ -247,14 +255,32 @@ class PlayCaseLib(cbr.CaseLibrary):
 
         self.filename = filename
 
+    def storeCase(self, caseToStore):
+        """ Adds a case to the database and the database file"""
+        self.addCase(caseToStore)
+        caseToStore.addToFile(self.filename)
 
-    def readSymDBFromTextFile(self, filename): 
 
-        v = []
+
+class ReducedPlayCaseLib(cbr.CaseLibrary):
+
+    def __init__(self, cases=[]):
+        self.cases = cases  
+
+    def addCase(self, case):
+        """ Adds the case to the lib. This function do not store the case in 
+            a file. For that, storeCase() can be used.
+        """
+        self.cases.append(case)
+
+    def readDatabaseFromTextFile(self, filename): 
+
         f = open(filename, 'r')
         line = f.readline() 
 
         print 'Reading data....'
+
+        v = []
 
         while line != '':
             #Converts data in Numeric format
@@ -279,262 +305,509 @@ class PlayCaseLib(cbr.CaseLibrary):
             f.readline()
             line = f.readline()
 
+        self.filename = filename
+
         print '...done!\n'
 
-
-    def KNN(self, K, newCase, W):
-        dist = []
-        for case in self.cases:
-            dist.append(distance(case.currentPlay.data, 
-                                                newCase.currentPlay.data, W))
-        ind = argsort(dist)
-        data = []
-        for k in range(K):
-            data.append(dist[ind[k]])
-        newCase.setNearest(ind[0:K], data)
-
-
-    def performRetrieval(self, newCase, k=1):
-        W = [1, 1, 1, 1, 1, 1, 1, 1, 0, 0]
-        self.KNN(k,newCase,W)
-        indices = newCase.kNN
-        retrievedCases = [self.cases[x] for x in indices]
-
-        return retrievedCases
-
-
-    def solveCase(self, caseToSolve):
-        retrievedCases = self.performRetrieval(caseToSolve, 4)
-        problemPlay = caseToSolve.currentPlay
-        method = askForMethod()
-        adaptedSol = getAdaptedSolution(problemPlay, retrievedCases, method)
-        return adaptedSol
-
-
     def storeCase(self, caseToStore):
+        """ Adds a case to the database and the database file"""
         self.addCase(caseToStore)
         caseToStore.addToFile(self.filename)
 
 
 
+class CBRProcessor():
 
-def distance(caseData, newCaseData, W=None):
-    
-    if W is None:
-        W = [1, 1, 1, 1, 1, 1, 1, 1, 0, 0]
+    def __init__(self, FullLibrary, ReducedLibrary):
+        """ CBR Processor holds the main functions and heart of the CBR.
+            Inputs are the databases of string with the paths of their files
+        """
 
-    D = []
-    DD = [] 
-    
-    for Dim in range(len(caseData)):
-        dim = Dim - 1
-        DD.append(abs(caseData[dim] - newCaseData[dim]))
-        # print dim
-        D.append(W[dim] * (abs(caseData[dim] - newCaseData[dim])))
-    
-    # similarity measure: sum of weighted distances + 
-    #                    + penalization for moving the rock in diagonal + 
-    #                    + penalization for moving the king more than 2 spaces
+        if isinstance(FullLibrary,str):
+            self.readFDatabaseFromFiles(FullLibrary)
+        elif isinstance(FullLibrary,PlayCaseLib):
+            self.FLib = FullLibrary
+        else:
+            print "Error: Full Library must be a PlayCaseLib object"
 
-    sim = sum(D) + (W[8] * (DD[5] - DD[1]) * (DD[4] - DD[0]) + W[9] * 
-                    (DD[2]) * (DD[2] - 1) + W[9] * (DD[3]) * (DD[3] - 1)) 
+        if isinstance(ReducedLibrary,str):
+            self.readRDatabaseFromFiles(ReducedLibrary)
+        elif isinstance(ReducedLibrary,ReducedPlayCaseLib):
+            self.RLib = ReducedLibrary
+        else:
+            print "Error: Reduced Library must be a PlayCaseLib object"
 
-    return sim
+        self.solvedCasesCache = []
+        self.heart = "Unicorns and other happy tender things"
 
+        self.query = None
+        self.retrievedCases = []
+        self.retrievedDistances = []
+        self.solution = None
 
+        # Default parameters of the CBR
+        self.k = 3
+        self.W = BASE_W
+        self.method = 2
+        self.coherence = True
 
-def getAdaptedSolution(problemPlay, retrievedCases, method=3, consist=True):
-    """ Adapts the retrieved cases to fit the case to solve given a method """
+    def __str__(self):
+        print "CBR Processor:"
+        print "    Main database filename: ", self.Flib.filename
+        print "    Reduced database filename: ", self.Rlib.filename
+        print "    Actual Parameters: "
+        print "                        k:", k 
+        print "                  weights:", W 
+        print "        adaptation method:", self.method
+        print "       preserve coherence:", self.coherence
+        print "    Solved cases in cache:", self.solvedCasesCache, "\n"
 
-    if method == 0:
-        solution = lazyAdaptation(problemPlay, retrievedCases, consist)
-    elif method == 1:
-        solution = adaptByLessDepth(retrievedCases, consist)
-    elif method == 3:
-        solution = adaptByAveraging(problemPlay, retrievedCases, consist)
-    elif method >= 4:
-        import extraAdaptationFunctions as extra
-        solution = extra.adapt(problemPlay, retrievedCases, method, consist)
-        if solution is None:
-            print "Method unknown, check the adaptation functions file!"
-            consistency, method = askForMethod()
+    def readFDatabaseFromFiles(self, FullLibraryFile):
+        self.FLib = PlayCaseLib()
+        self.FLib.readDatabaseFromTextFile(FullLibraryFile)
 
-    return solution
+    def readRDatabaseFromFiles(self, ReducedLibraryFile):
+        self.RLib = ReducedPlayCaseLib()
+        self.RLib.readDatabaseFromTextFile(ReducedLibraryFile)  
 
+    def getHeart(self):
+        """ Returns the heart of the CBR"""
+        return self.heart
 
+    def performNewQuery(self, query):
+        """ Adds a new current problem to the CBR Processor. If there is 
+            already a defined current problem it will be overwritten.
+                Input: a Play object describing the problem. Depth is optional
+        """
+        if isinstance(query, Play):
+            self.query = query
+            self.retrievedCases = []
+            self.retrievedDistances = []
+        else:
+            print "Error: Query must be an object of class Play"
 
-def lazyAdaptation(problemPlay, retrievedCases, preserveConsistency=False):
-    """ Do not perform adaptation (i.e. returns the first retrieved solution)
-        unless preserveConsistency is True 
-    """
+    def setK(self, k):
+        """ Sets the k parameter of the kNN for the retrieval"""
 
-    solution = retrievedCases[0].solution
+        if self.retrievedCases != [] and len(self.retrievedCases) != k:
+            print "Warning: changing the k once retrieval is performed"
+            print "Unexpected results may occur. Please, repeat retrieval"
+            print "with the new parameters before starting adaptation phase"
 
-    if preserveConsistency:
-        solution = findClosestConsistentSolution(problemPlay, solution.data)
-        solution = Play(solution)
+        self.k = k
 
-    return solution
+    def setWeights(self, W):
+        """ Sets the weight vector for the weighted kNN during retrieval"""
+        if len(W) != len(BASE_W):
+            print "Error: lenth of weights vector should be", len(BASE_W)
+        else:
+            self.W = W
 
+    def setAdaptationMethod(self):
+        """ Sets the adaptatio method used by the system. Options are:
+                0: lazy adaptation - returns the most similar case solution
+                1: less depth solution - returns the less deep of the closest
+                        solutions (does not admit force consistency)
+                2: adapt by averaging - provides an average solution of the
+                        most similar cases
+                3-9: use an user defined function (user defined functions can
+                        be added to the extraAdaptationFunctions.py file
+        """
 
-
-def adaptByLessDepth(retrievedCases, consistency=False):
-    """ Returns the solution in retrievedCases with less depth"""
-
-    if consistency:
-        "Warning! This adaptation method no not preserve consistency!"
-
-    best = float("inf")
-    bestIndex = 0    
-    
-    ind = 0
-    for sol in retrievedCases:
-        if(sol.solution.depth < best):
-            bestIndex = ind
-            best = sol.solution.depth
-        ind += 1
-
-    return retrievedCases[bestIndex].solution
-
-
-
-def adaptByAveraging(problemPlay, retrievedCases, preserveConsistency):
-    """ Adapts a given problemPlay (of class Play) using averaging over a list
-        of retrieved cases (of class PlayCase). Returns a solution Play.
-    """
-
-    k = len(retrievedCases)
-
-    if k < 2:
-        print "Warning! Averaging adaptation method is being used with k = 1"
-
-    # Perform average:
-    averagedFields = [0 for field in retrievedCases[0].currentPlay.data]
-    
-    d = len(averagedFields)
-
-    for i in range(d):
-        for case in retrievedCases:
-            averagedFields[i] += (1/k) * case.currentPlay.data[i]
-
-    if not preserveConsistency:
-        return Play([int(round(field)) for field in fields])
-    else:
-        return findClosestConsistentSolution(problemPlay, averagedFields)
-
-
-
-def findClosestConsistentSolution(problemPlay, fields):
-    """ Finds the closest solution to a no integer fields list
-        being consistent with the given problem.
-        Fiels format: [WKingX, WKingY, WRookX, WRookY, BKingX, BKingY]
-    """
-
-    intFields = Play([int(round(field)) for field in fields])
-    oF = problemPlay.data                           # original Fields
-
-    if problemPlay.checkForConsistenty(intFields):
-        return intFields
-
-    # Generating candidates
-    cands = [[oF[0] + 1, oF[1], oF[2], oF[3], oF[4], oF[5]],
-             [oF[0] - 1, oF[1], oF[2], oF[3], oF[4], oF[5]],
-             [oF[0], oF[1] + 1, oF[2], oF[3], oF[4], oF[5]],
-             [oF[0], oF[1] - 1, oF[2], oF[3], oF[4], oF[5]],
-             [[oF[0], oF[1], i, oF[3], oF[4], oF[5]] for i in range(1,9)],
-             [[oF[0], oF[1], oF[2], i, oF[4], oF[5]] for i in range(1,9)]]
-
-    # Filtering positions out of the domain
-    cands = [c for c in cands if (c[0] < 9 and c[0] > 0)]
-    cands = [c for c in cands if (c[1] < 9 and c[1] > 0)]
-
-
-    minDist = float("inf")
-
-    for c in cands:
-        cDist = sum([abs(x - y) for x in intFields.data for y in c])
-        if cDist < minDist:
-            closerField = c
-            minDist = cDist      
-
-    return Play(closerField) 
-
-
-def askForMethod():
-    """ Ask the user for an adaptation method and returns it as an integer """
-
-    print "\nPlease, choose an adaptation method (press enter for default):"
-    print "   0: lazy adaptation - returns the most similar case solution"
-    print "   1: less depth solution - returns the less deep of the closest"
-    print "             solutions (does not admit force consistency)"
-    print "   2: adapt by averaging - provides an average solution of the"
-    print "             most similar cases"
-    print "   3: use an user defined function (user defined functions can"
-    print "             be added to the extraAdaptationFunctions.py file "
-    print "\n"
-
-    method = raw_input("Adaptation method (0-9): ")
-    if method == '':
-        return [True, 2]
-    else:
-        try:
-            method = int(float(method))
-        except:
+        if isinstance(method, int):
+            if method > 0 and method < 10:
+                self.method = method
+            else:
+                print "Invalid input, method should be an int between 0 and 9"
+        else:
             print "Invalid input, method should be an integer"
-            method = None
-        if method >= 0 and method < 10:
-            return method
+
+    def setConsistencyPolicy(self):
+        """ Sets the consistency policy of the CBR. When True, only consistent
+            solutions can be obtained from the adaptation system. This
+            restriction is highly domain dependent, so it can be deactivated
+        """
+        if isinstance(consistency, bool):
+            self.consistency = consistency
         else:
-            print "Invalid input, method shold be a number between 0 and 9"
+            print "Invalid input, consistency should be a True/False constant"
 
-    if method == None:
-        method = askForMethod()
-        return method
+    def askForConsistency(self):
+        """ Ask the user for consistency keeping durign adaptation"""
 
+        print "\n"
+        print "Do you want to restrict the adaptation only to coherent cases?"
+        print "Free adaptation is more general: can be used in other domains"
+        print "\n"
 
+        cons = raw_input("Preserve consistency? (y/n): ")
+        if cons == '':
+            return [True, 2]
+        elif cons == 'y' or cons == 'yes' or cons == 'yap':
+            return True
+        elif cons == 'n' or cons == 'no' or cons == 'nop':
+            return False
+        else:
+            print "Invalid input, consistency should be a True/False constant"
 
-def askForMethod():
-    """ Ask the user for consistency keeping durign adaptation"""
+        if cons is None:
+            self.consistency = askForMethod()
 
-    print "\nDo you want to restrict the adaptation only to coherent cases?"
-    print "  Free adaptation is more general and can be used in other domains"
-    print "\n"
+    def askForMethod(self):
+        """ Ask the user for an adaptation method """
 
-    consistency = raw_input("Preserve consistency (y/n): ")
-    if consistency == '':
-        return [True, 2]
-    elif consistency == 'y' or consistency == 'yes' or consistency == 'yap':
-        return True
-    elif consistency == 'n' or consistency == 'no' or consistency == 'nop':
-        return False
-    else:
-        print "Invalid input, method shold be a number between 0 and 9"
-        consistency = None
+        print "\nPlease, choose an adaptation method (enter for default: 2):"
+        print "   0: lazy adaptation - returns the most similar case solution"
+        print "   1: less depth solution - returns the less deep of the"
+        print "             closest solutions (does not admit consistency)"
+        print "   2: adapt by averaging - provides an average solution of the"
+        print "             most similar cases"
+        print "   3: use an user defined function (user defined functions can"
+        print "             be added to the extraAdaptationFunctions.py file "
+        print "\n"
 
-    if consistency == None:
-        consistency = askForMethod()
-        return consistency
+        method = raw_input("Adaptation method (0-9): ")
 
+        if method == '':
+            return [True, 2]
+        else:
+            try:
+                method = int(float(method))
+            except:
+                print "Invalid input, method should be an integer"
+                method = None
+            if method >= 0 and method < 10:
+                self.method = method
+            else:
+                print "Invalid input, method shold be a number between 0 and 9"
 
+        if method is None:
+            method = askForMethod()
+            self.method = method
 
-def askForDepthEvaluation(play):
-    """ Ask the user to evalue the depth (i.e. number of movement until 
-        checkmate) of a play """
-    print "Please, evalue the following play (blacks to move)"
-    print play
-    print "\n"
+    def performRetrieval(self):
+        """ Performs the retrieval using the parameters of the CBR. Retrieved 
+            cases and their distances to the query are stored in the object.
+        """ 
+        kNNIndices, self.retrievedDistances = self.KNN()
+        
+        rC = [self.RLib.cases[x].projectOriginalRepresentation(self.gauge)
+                 for x in indices]
+
+        self.retrievedCases = rC
+
+    def kNN(self):
+        """ Finds the k Nearest Neighbors of the query Case in the library 
+            using the weight vector W to compute the distance.
+            Returns a list of the k indices of the cases and their distances.
+        """
+
+        qdata = self.query.getReducedRepresentation()   # data from query
+
+        distances = [self.distance(case.currentPlay.data, qdata) 
+                     for case in library.RLib]
+
+        kNNIndices = argsort(distances)[0:K]
+
+        distances = [dist[ind[k]] for k in range(K)]
+
+        return [kNNIndices, distances]
+
+    def distance(self, c1, c2):
+        """ Finds weighted distance between cases c1 and c2 (reduced rep.)"""
     
-    depth = raw_input("Estimated depth (press enter for skip): ")
-
-    if depth == '':
-        return None
-    else:
-        try:
-            depth = int(float(depth))
-        except:
-            print "Invalid input, depth should be an integer"
-            depth = None
-        if depth >= 0 and depth < 20:
-            return depth
+        if len(c1) == len(c2):
+            dimension = len(c1)
         else:
-            print "Invalid input, depth shold be a number between 0 and 20"
+            print "Wrong input, cases need to have the same dimension!"
+            return None
+
+        # Component wise Manhattan distance
+        dist = [abs(c1[i] - c2[i]) for i in range(dimension)]
+        # Component wise weighted Manhattan distance
+        wDist = [self.W[i] * dist[i] for i in range(dimension)]
+        
+        totalWManhattan = sum(wDist)
+        # Penalization for moving the rock in diagonal
+        diagRookMoving = (dist[5] - dist[1]) * (dsit[4] - dist[0])
+        # Penalization for moving the king more than 2 spaces
+        kingMoreThan2 = dist(2) * (dist(2) - 1) + dist(3) * (dist(3) - 1)
+
+        distance = (totalWManhattan + 
+                    self.W[8] * diagRookMoving + 
+                    self.W[9] * kingMoreThan2)
+
+        return distance
+
+    def getAdaptedSolution(self):
+        """ Uses retrieved cases to construct a solution for the query """
+
+        if self.method == 0:
+            solution = self.lazyAdaptation()
+
+        elif self.method == 1:
+            solution = self.adaptByLessDepth()
+
+        elif self.method == 3:
+            solution = self.adaptByAveraging()
+
+        elif self.method >= 4:
+            try:
+                import extraAdaptationFunctions as extra
+            except:
+                print "There is some problems with the adaptation functions"
+                print "extra library. Please, check the file."
+
+            solution = extra.adapt(self.query, self.retrievedCases,
+                                             self.method, self.consistency)
+
+            if self.solution is None:
+                print "Method not defined. Please, check definitions in"
+                print "the adaptation functions file!" 
+                print "In the meanwhile, you can select another method."
+                method = self.askForMethod()
+                consistency = self.askForConsistency()
+
+        self.solution = solution
+
+    def lazyAdaptation(self):
+        """ Do not perform adaptation (i.e. sets as solution the solution of 
+            the first retrieved case). Very lazy indeed. 
+        """
+        self.solution = self.retrievedCases[0].solution
+
+        if self.coherence:
+            self.moveSolutionToClosestConsistent()
+
+    def adaptByLessDepth(self):
+        """ Sets the solution stored in retrieved cases with less depth
+            (i.e. the most optimal from the point of view of the problem) 
+            as the problem solution.
+        """
+
+        best = float("inf")
+        bestIndex = 0    
+        
+        i = 0
+        for c in self.retrievedCases:
+            if c.solution.depth is not None and c.solution.depth < best:
+                bestIndex = i
+                best = c.solution.depth
+            i += 1
+
+        if best == float("inf"):
+            print "No listed solution with defined depth!"
+            print "Please, choose another method and try again"
+        else:
+            self.solution = self.retrievedCases[bestIndex].solution
+            if self.coherence:
+               self.moveSolutionToClosestConsistent()
+
+    def adaptByAveraging(self):
+        """ Adapts the solution using averaging weighted by distance
+            over the retrieved cases """
+
+        if self.k < 2:
+            print "Warning! Averaging method is being used with k = 1!"
+
+        rc = self.retrievedCases
+
+        # Initialising averagedFields:
+        averagedFields = [0 for field in rc[0].currentPlay.data]
+        dimension = len(averagedFields)
+
+        # Computing weights:
+        similarities = [max(self.distances) - d for d in self.distances]
+        w = [s/sum(s) for s in similarities]
+
+        for i in range(dimension):
+            for case in retrievedCases:
+                averagedFields[i] += w[i] * rc[i].currentPlay.data
+
+        if not preserveConsistency:
+            self.solution = Play([int(round(field)) for field in fields])
+        else:
+            self.solution = self.findClosestConsistentSolution(averagedFields)
+
+    def moveSolutionToClosestConsistent(self):
+        """ Sets the (manhattan) closest solution to the one in the system """
+        """ If solution is already consistent, depth is preserved"""
+
+        if self.solution is None:
+            print "Error: no solution have been computed yet!"
+        elif not self.query.checkForConsistenty(self.solution):
+            self.solution = self.findClosestConsSolution(self.solution.data)
+
+    def findClosestConsSolution(self,fields):
+        """ Returns the (manhattan) closest solution to a non necessearily
+            integer fields list being consistent with the given query.
+            Fiels format: [WKingX, WKingY, WRookX, WRookY, BKingX, BKingY]
+        """
+
+        intFields = Play([int(round(field)) for field in fields])
+        qF = self.query.data                           # query Fields
+
+        if query.checkForConsistenty(intFields):
+            return Play(intFields)
+
+        # Generating candidates
+        #         WKingX   WKingY   WRook(x,y)    BKing(x,y)
+        cands = [[qF[0] + 1, qF[1], qF[2], qF[3], qF[4], qF[5]],
+                 [qF[0] - 1, qF[1], qF[2], qF[3], qF[4], qF[5]],
+                 [qF[0], qF[1] + 1, qF[2], qF[3], qF[4], qF[5]],
+                 [qF[0], qF[1] - 1, qF[2], qF[3], qF[4], qF[5]],
+                 [[qF[0], qF[1], i, qF[3], qF[4], qF[5]] for i in range(1,9)],
+                 [[qF[0], qF[1], qF[2], i, qF[4], qF[5]] for i in range(1,9)]]
+
+        # Filtering positions out of the domain
+        cands = [c for c in cands if (c[0] < 9 and c[0] > 0)]
+        cands = [c for c in cands if (c[1] < 9 and c[1] > 0)]
+
+        # Filtering current position (white must move)
+        cands = [c for c in cands if c != qF]
+
+        # Initialising minimum distance
+        minDist = float("inf")
+
+        for c in cands:
+            cDist = sum([abs(x - y) for x in intFields.data for y in c])
+            if cDist < minDist:
+                closerField = c
+                minDist = cDist      
+
+        return Play(closerField) 
+
+    def askForDepthEvaluation(self):
+        """ Ask the user to evalue the depth (i.e. number of movement until 
+            checkmate) of a proposed solution """
+        print "Please, evalue the following play (blacks to move):"
+        print self.solution
+        print "\n"
+        
+        depth = raw_input("Estimated depth (press enter for skip): ")
+
+        if depth != '':
+            try:
+                depth = int(float(depth))
+            except:
+                print "Invalid input, depth should be an integer"
+                self.askForDepthEvaluation()
+            if depth >= 0 and depth < 20:
+                self.solution.depth = depth
+            else:
+                print"Invalid input, depth shold be a number between 0 and 20"
+                self.askForDepthEvaluation()
+
+    def askForEvaluation(self):
+        """ Ask the user to evaluate the solution of the system"""
+
+        if self.solution is None:
+            print "No solution found to be evaluated"
+            return None
+
+        print "The introduced problem was:"
+        print self.query
+        print "Please, evalue the following solution proposed by the system:"
+        print self.solution
+        print "\n"
+        print "Evaluation should be a number between 0 and 1. The system will"
+        print "add the case to the database if the evaluation is over 0.7"
+        
+        evaluation = raw_input("Evaluation result (press enter for skip): ")
+
+        if evaluation != '':
+            try:
+                evaluation = float(depth)
+            except:
+                print "Invalid input, evaluation should be a number!"
+                self.askForEvaluation()
+            if evaluation >= 0 and evaluation <= 1:
+                return evaluation
+            else:
+                print"Invalid input, evaluation shold be between 0 and 1"
+                self.askForDepthEvaluation()
+
+    def getEvaluationMeasure(self, askEvaluation=False, askDepth=True):
+        """ Performs evaluation of the solution stored in the system"""
+
+        if self.solution is None:
+            print "No solution found to be evaluated"
+            return None
+
+        if askEvaluation:
+            evaluationResult = askForEvaluation()
+
+        if not askEvaluation or evaluationResult is None:
+            if self.query.depth is None:
+                depthConsistency = None
+            elif self.solution.depth is None:
+                if askDepth:
+                    askForDepthEvaluation()
+                if self.solution.depth is None:
+                    depthConsistency = None
+            else: 
+                if self.currentPlay.depth > self.solution.depth:
+                    depthConsistency = 1
+                else:
+                    depthConsistency = 0
+
+            if self.currentPlay.checkForConsistenty(self.solution):
+                playConsistency = 1
+            else:
+                playConsistency = 0
+
+            if depthConsistency == None:
+                print "\n Warning: Depth-consistency cannot be evalued \n"
+                depthConsistency = 0
+
+            evaluationResult = 0.5 * (depthConsistency + playConsistency)
+
+        return evaluationResult
+
+    def finishCurrentQuery(self, askForDepth=True, askEvaluation=False):
+        """ Terminates the current query. If a solution is defined, it is 
+            evaluated and returned. If evaluation perform is over 0.5, the 
+            solution is, in addition, added to the cache database.
+        """
+        print "\n\nQuery terminated ------"
+        print "    Introduced Query:", self.query
+
+        if solution != None:
+            evaluation = self.getEvaluationMeasure(askForDepth, askDepth)
+
+            print "    Proposed Solution:", self.solution
+
+            if evaluation != None:
+                print "    Evaluation of the result:", round(evaluation,2)            
+                if evaluation >= 0.7:
+                    finalCase = Case(self.query, self.solution)
+                    self.solvedCasesCache.append(finalCase)
+                    print "Case was stored in cache. Please, remember to save" 
+                    print "the changes before close the system to permanently"
+                    print "add the stored cases to the database."
+
+        self.__init__()
+
+        print "\nPlease, add a new query to start again."
+
+    def saveCache(self):
+        """ Adds cases in cache to the permanent database files """
+        while self.solvedCasesCache != []:
+            case = self.solvedCasesCache.pop()
+            rcase = case.getReducedRepresentation()
+            self.FLib.storeCase(case)
+            self.RLib.storeCase(rcase)
+
+
+
+
+
+
+
+
+
+
+
+
+
+

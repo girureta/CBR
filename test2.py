@@ -10,9 +10,10 @@ print "--CBR Simulation--\n"
 
 # --- DATA PROCESSING ---
 
-lib = chess.PlayCaseLib()
-
-lib.readSymDBFromTextFile('data/symetricDB')
+FLib = chess.PlayCaseLib()
+Flib.readDatabaseFromTextFile('data/database')
+RLib = chess.ReducedPlayCaseLib()
+RLib.readDatabaseFromTextFile('data/symetricDB')
 
 # Split data into training/testing sets
 testSplit = 0.7;
