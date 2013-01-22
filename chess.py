@@ -92,7 +92,7 @@ class Play():
         newData = [distToX, distToY, BKingWKingX, BKingWKingY, BKingWRookX, 
                 BKingWRookY, WKingWRookX, WKingWRookY]
 
-        return ReducedPlay(newData)  
+        return ReducedPlay(newData,self.depth)  
 
     def getGauge(self):
         """ Returns the gauge of the play, i.e. the necessearily information
@@ -157,8 +157,15 @@ class ReducedPlay():
 
     def projectOriginalRepresentation(self, gauge):
         """ Returns the plau in the original representation (Play object)"""
-        pass
+        BKingX = abs(9 * gauge[0] - self.data[0])
+        BKingY = abs(9 * gauge[1] - self.data[1])
+        WKingX = BKingX + self.data[2]
+        WKingY = BKingY + self.data[3]
+        WRookX = BKingX + self.data[4]
+        WRookY = BKingY + self.data[5]
+        ConvertedPlay = [BKingX, BKingY, WKingX, WKingY, WRookX, WRookY]
 
+        return Play(ConvertedPlay,self.depth) 
 
 
 class PlayCase():
@@ -193,8 +200,8 @@ class ReducedPlayCase():
 
     def projectOriginalRepresentation(self, gauge):
         """ Projects the case to the original representation (Case object)"""
-        fPlay = projectOriginalRepresentation(gauge)
-        fSol = projectOriginalRepresentation(gauge) 
+        fPlay = self.currentPlay.projectOriginalRepresentation(gauge)
+        fSol = self.solution.projectOriginalRepresentation(gauge) 
         return PlayCase(fPlay, fSol) 
 
 
@@ -288,7 +295,7 @@ class ReducedPlayCaseLib(cbr.CaseLibrary):
             for i in fields:
                 v.append(int(i))
             d = v.pop()
-            currentProblemPlay = Play(v, d)
+            currentProblemPlay = ReducedPlay(v, d)
             v = []
 
             line = f.readline()
@@ -296,10 +303,10 @@ class ReducedPlayCaseLib(cbr.CaseLibrary):
             for i in fields:
                 v.append(int(i))
             d = v.pop()
-            currentSolutionPlay = Play(v,d)
+            currentSolutionPlay = ReducedPlay(v,d)
             v = []
 
-            currentCase = PlayCase(currentProblemPlay, currentSolutionPlay)
+            currentCase = ReducedPlayCase(currentProblemPlay, currentSolutionPlay)
             self.addCase(currentCase)
 
             f.readline()
@@ -353,11 +360,11 @@ class CBRProcessor():
 
     def __str__(self):
         print "CBR Processor:"
-        print "    Main database filename: ", self.Flib.filename
-        print "    Reduced database filename: ", self.Rlib.filename
+        print "    Main database filename: ", self.FLib.filename
+        print "    Reduced database filename: ", self.RLib.filename
         print "    Actual Parameters: "
-        print "                        k:", k 
-        print "                  weights:", W 
+        print "                        k:", self.k 
+        print "                  weights:", self.W 
         print "        adaptation method:", self.method
         print "       preserve coherence:", self.coherence
         print "    Solved cases in cache:", self.solvedCasesCache, "\n"
@@ -489,10 +496,14 @@ class CBRProcessor():
         """ Performs the retrieval using the parameters of the CBR. Retrieved 
             cases and their distances to the query are stored in the object.
         """ 
-        kNNIndices, self.retrievedDistances = self.KNN()
+        kNNIndices, self.retrievedDistances = self.kNN()
+        # print self.RLib.cases[kNNIndices[1]].currentPlay.data
+        # print self.FLib.cases[kNNIndices[1]].currentPlay.data
         
-        rC = [self.RLib.cases[x].projectOriginalRepresentation(self.gauge)
-                 for x in indices]
+        
+        rC = [self.RLib.cases[x].projectOriginalRepresentation(self.query.gauge)
+                 for x in kNNIndices]
+        # print rC[1].currentPlay
 
         self.retrievedCases = rC
 
@@ -501,15 +512,14 @@ class CBRProcessor():
             using the weight vector W to compute the distance.
             Returns a list of the k indices of the cases and their distances.
         """
-
         qdata = self.query.getReducedRepresentation()   # data from query
 
-        distances = [self.distance(case.currentPlay.data, qdata) 
-                     for case in library.RLib]
+        dist = [self.distance(case.currentPlay.data, qdata.data) 
+                     for case in self.RLib.cases]
 
-        kNNIndices = argsort(distances)[0:K]
+        kNNIndices = argsort(dist)[0:self.k]
 
-        distances = [dist[ind[k]] for k in range(K)]
+        distances = [dist[kNNIndices[k]] for k in range(self.k)]
 
         return [kNNIndices, distances]
 
@@ -529,9 +539,9 @@ class CBRProcessor():
         
         totalWManhattan = sum(wDist)
         # Penalization for moving the rock in diagonal
-        diagRookMoving = (dist[5] - dist[1]) * (dsit[4] - dist[0])
+        diagRookMoving = (dist[5] - dist[1]) * (dist[4] - dist[0])
         # Penalization for moving the king more than 2 spaces
-        kingMoreThan2 = dist(2) * (dist(2) - 1) + dist(3) * (dist(3) - 1)
+        kingMoreThan2 = dist[2] * (dist[2] - 1) + dist[3] * (dist[3] - 1)
 
         distance = (totalWManhattan + 
                     self.W[8] * diagRookMoving + 
@@ -548,10 +558,10 @@ class CBRProcessor():
         elif self.method == 1:
             solution = self.adaptByLessDepth()
 
-        elif self.method == 3:
+        elif self.method == 2:
             solution = self.adaptByAveraging()
 
-        elif self.method >= 4:
+        elif self.method >= 3:
             try:
                 import extraAdaptationFunctions as extra
             except:
@@ -647,7 +657,7 @@ class CBRProcessor():
         intFields = Play([int(round(field)) for field in fields])
         qF = self.query.data                           # query Fields
 
-        if query.checkForConsistenty(intFields):
+        if self.query.checkForConsistenty(intFields):
             return Play(intFields)
 
         # Generating candidates
@@ -772,7 +782,7 @@ class CBRProcessor():
         print "\n\nQuery terminated ------"
         print "    Introduced Query:", self.query
 
-        if solution != None:
+        if self.solution != None:
             evaluation = self.getEvaluationMeasure(askForDepth, askDepth)
 
             print "    Proposed Solution:", self.solution
@@ -786,7 +796,7 @@ class CBRProcessor():
                     print "the changes before close the system to permanently"
                     print "add the stored cases to the database."
 
-        self.__init__()
+        self.__str__() 
 
         print "\nPlease, add a new query to start again."
 
