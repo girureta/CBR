@@ -40,7 +40,7 @@ testLib =  chess.PlayCaseLib(caseSet[b:])
 # --- TESTING CBR ---
 print "Some Examples: "
 K=5
-for c in testLib.cases[:1]:
+for c in testLib.cases[:10]:
     print "\n"
 
     print "CurrentPlay:", c.currentPlay.data, "with depth", c.currentPlay.depth
@@ -63,6 +63,6 @@ for c in testLib.cases[:1]:
     
     sol=trainLib.solveCase(c)
  
-    print 'The solution is, ',sol.data
+    print 'The solution is, ',sol.data,' ',sol.depth
     
 print '\n--Simulation Finished--\n'
