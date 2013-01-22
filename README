@@ -1,1 +1,13 @@
 Advanced Machine Learning Techniques -- Case Based Reasoning System
+
+
+Execute:
+
+
+For a command line interface to the system.
+python test_CLI.py 
+
+
+For a graphic interface to the system (require pyqt4 qt4).
+python test_qt4.py
+
