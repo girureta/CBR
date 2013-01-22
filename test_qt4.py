@@ -1,7 +1,7 @@
 import sys
 from PyQt4 import QtGui,QtCore
 
-from playChess import Ui_Dialog
+from playChess_qt4 import Ui_Dialog
 
 import chess
 
