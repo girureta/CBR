@@ -566,7 +566,7 @@ class CBRProcessor():
         self.adaptSolution()
         self.evaluateSolution()
 
-        results = [self.solution, self.evaluation]
+        results = self.getHumanReadableMovement()
 
         self.finishCurrentQuery()
 
@@ -842,7 +842,7 @@ class CBRProcessor():
                 print"Invalid input, evaluation shold be between 0 and 1"
                 self.askForDepthEvaluation()
 
-    def evaluateSolution(self, askEvaluation=False, askDepth=True):
+    def evaluateSolution(self, askEvaluation=False, askDepth=False):
         """ Performs evaluation of the solution stored in the system"""
 
         print "Evaluating Solution..."
@@ -883,7 +883,7 @@ class CBRProcessor():
 
         self.evaluation = evaluationResult
 
-    def finishCurrentQuery(self, askEvaluation=False, askDepth=True):
+    def finishCurrentQuery(self, askEvaluation=False, askDepth=False):
         """ Terminates the current query. If a solution is defined, it is 
             evaluated and returned. If evaluation perform is over 0.5, the 
             solution is, in addition, added to the cache database.
@@ -915,6 +915,24 @@ class CBRProcessor():
         print " \n\nPlease, add a new query to start again."
 
         self.intialiseQueryVariables()
+
+    def getHumanReadableMovement(self):
+        """ Returns a string detailing the movement if there is a solution
+            computed in the CBR system
+        """
+        q = self.query
+        s = self.solution
+
+        if self.solution is not None:
+            solutionIsOk = self.query.checkForConsistenty(self.solution)
+        else: 
+            solutionIsOk = False
+
+        if solutionIsOk:
+            if q.WKingX != s.WKingX or q.WKingY != s.WKingY:
+                return "Move White King to " + self.solution.readWKingPosition()
+            if q.WRookX != s.WRookX or q.WRookY != s.WRookY:
+                return "Move White Rook to " + self.solution.readWRookPosition()
 
     def saveCache(self):
         """ Adds cases in cache to the permanent database files """
