@@ -114,7 +114,7 @@ class Play():
 
     def checkForConsistenty(self, checkedPlay):
         """ Checks if new checkedPlay is a possible configuration after
-            a white player move starting from the current play
+            a white players move starting from the current play
         """
 
         legalKingXMove = abs(self.WKingX() - checkedPlay.WKingX()) == 1
@@ -139,6 +139,7 @@ class Play():
             return True
         else:
             return False
+
 
 
 class ReducedPlay():
@@ -166,6 +167,7 @@ class ReducedPlay():
         ConvertedPlay = [BKingX, BKingY, WKingX, WKingY, WRookX, WRookY]
 
         return Play(ConvertedPlay,self.depth) 
+
 
 
 class PlayCase():
@@ -252,8 +254,9 @@ class PlayCaseLib(cbr.CaseLibrary):
 
             currentSolutionPlay = Play(v,d)
 
-            currentCase = PlayCase(currentProblemPlay, currentSolutionPlay)
-            self.addCase(currentCase)
+            if currentSolutionPlay.data != currentProblemPlay.data:
+                c = PlayCase(currentProblemPlay, currentSolutionPlay)
+                self.addCase(c)
 
             f.readline()
             line = f.readline()
@@ -306,8 +309,11 @@ class ReducedPlayCaseLib(cbr.CaseLibrary):
             currentSolutionPlay = ReducedPlay(v,d)
             v = []
 
-            currentCase = ReducedPlayCase(currentProblemPlay, currentSolutionPlay)
-            self.addCase(currentCase)
+
+            if currentSolutionPlay.data != currentProblemPlay.data:
+                c = ReducedPlayCase(currentProblemPlay, currentSolutionPlay)
+                self.addCase(c)
+
 
             f.readline()
             line = f.readline()
@@ -351,6 +357,7 @@ class CBRProcessor():
         self.retrievedCases = []
         self.retrievedDistances = []
         self.solution = None
+        self.evaluation = None
 
         # Default parameters of the CBR
         self.k = 3
@@ -410,7 +417,7 @@ class CBRProcessor():
         else:
             self.W = W
 
-    def setAdaptationMethod(self):
+    def setAdaptationMethod(self, method):
         """ Sets the adaptatio method used by the system. Options are:
                 0: lazy adaptation - returns the most similar case solution
                 1: less depth solution - returns the less deep of the closest
@@ -422,14 +429,14 @@ class CBRProcessor():
         """
 
         if isinstance(method, int):
-            if method > 0 and method < 10:
+            if method >= 0 and method < 10:
                 self.method = method
             else:
                 print "Invalid input, method should be an int between 0 and 9"
         else:
             print "Invalid input, method should be an integer"
 
-    def setConsistencyPolicy(self):
+    def setConsistencyPolicy(self, consistency):
         """ Sets the consistency policy of the CBR. When True, only consistent
             solutions can be obtained from the adaptation system. This
             restriction is highly domain dependent, so it can be deactivated
@@ -497,13 +504,13 @@ class CBRProcessor():
             cases and their distances to the query are stored in the object.
         """ 
         kNNIndices, self.retrievedDistances = self.kNN()
-        # print self.RLib.cases[kNNIndices[1]].currentPlay.data
         # print self.FLib.cases[kNNIndices[1]].currentPlay.data
         
-        
-        rC = [self.RLib.cases[x].projectOriginalRepresentation(self.query.gauge)
+        gauge = self.query.gauge
+
+        rC = [self.RLib.cases[x].projectOriginalRepresentation(gauge)
                  for x in kNNIndices]
-        # print rC[1].currentPlay
+        # print rC[1].currentPlay.data
 
         self.retrievedCases = rC
 
@@ -549,17 +556,29 @@ class CBRProcessor():
 
         return distance
 
-    def getAdaptedSolution(self):
+    def printRetrievedCases(self):
+        """ Prints the retrievedCases in full-representation """
+        i = 1
+        for case in self.retrievedCases:
+            print "Retrieved case #" + str(i)
+            print "    Problem:", case.currentPlay
+            print "    Solution;", case.solution, '\n'
+            i += 1
+
+    def adaptSolution(self):
         """ Uses retrieved cases to construct a solution for the query """
 
         if self.method == 0:
-            solution = self.lazyAdaptation()
+            print "Adaptation method: Lazy Adaptation"
+            self.lazyAdaptation()
 
         elif self.method == 1:
-            solution = self.adaptByLessDepth()
+            print "Adaptation method: Less-depth Solution"
+            self.adaptByLessDepth()
 
         elif self.method == 2:
-            solution = self.adaptByAveraging()
+            print "Adaptation method: Adapt by Averaging"
+            self.adaptByAveraging()
 
         elif self.method >= 3:
             try:
@@ -568,6 +587,7 @@ class CBRProcessor():
                 print "There is some problems with the adaptation functions"
                 print "extra library. Please, check the file."
 
+            print "Adaptation method: User defined"
             solution = extra.adapt(self.query, self.retrievedCases,
                                              self.method, self.consistency)
 
@@ -577,15 +597,14 @@ class CBRProcessor():
                 print "In the meanwhile, you can select another method."
                 method = self.askForMethod()
                 consistency = self.askForConsistency()
-
-        self.solution = solution
+            else:
+                self.solution = solution
 
     def lazyAdaptation(self):
         """ Do not perform adaptation (i.e. sets as solution the solution of 
             the first retrieved case). Very lazy indeed. 
         """
         self.solution = self.retrievedCases[0].solution
-
         if self.coherence:
             self.moveSolutionToClosestConsistent()
 
@@ -623,21 +642,22 @@ class CBRProcessor():
         rc = self.retrievedCases
 
         # Initialising averagedFields:
-        averagedFields = [0 for field in rc[0].currentPlay.data]
+        averagedFields = [0 for field in rc[0].solution.data]
         dimension = len(averagedFields)
 
         # Computing weights:
-        similarities = [max(self.distances) - d for d in self.distances]
-        w = [s/sum(s) for s in similarities]
+        maxDistance = max(self.retrievedDistances)
+        similarities = [maxDistance - d + 1 for d in self.retrievedDistances]
+        w = [s/sum(similarities) for s in similarities]
 
         for i in range(dimension):
-            for case in retrievedCases:
-                averagedFields[i] += w[i] * rc[i].currentPlay.data
+            for j in range(len(rc)):
+                averagedFields[i] += w[j] * rc[j].solution.data[i]
 
-        if not preserveConsistency:
+        if not self.coherence:
             self.solution = Play([int(round(field)) for field in fields])
         else:
-            self.solution = self.findClosestConsistentSolution(averagedFields)
+            self.solution = self.findClosestConsSolution(averagedFields)
 
     def moveSolutionToClosestConsistent(self):
         """ Sets the (manhattan) closest solution to the one in the system """
@@ -672,7 +692,7 @@ class CBRProcessor():
         # Filtering positions out of the domain
         cands = [c for c in cands if (c[0] < 9 and c[0] > 0)]
         cands = [c for c in cands if (c[1] < 9 and c[1] > 0)]
-
+    
         # Filtering current position (white must move)
         cands = [c for c in cands if c != qF]
 
@@ -683,18 +703,19 @@ class CBRProcessor():
             cDist = sum([abs(x - y) for x in intFields.data for y in c])
             if cDist < minDist:
                 closerField = c
-                minDist = cDist      
+                minDist = cDist    
 
         return Play(closerField) 
 
     def askForDepthEvaluation(self):
         """ Ask the user to evalue the depth (i.e. number of movement until 
             checkmate) of a proposed solution """
-        print "Please, evalue the following play (blacks to move):"
+        print "\n\nPlease, evalue the following play (blacks to move):"
         print self.solution
         print "\n"
         
         depth = raw_input("Estimated depth (press enter for skip): ")
+        print "\n"
 
         if depth != '':
             try:
@@ -702,14 +723,16 @@ class CBRProcessor():
             except:
                 print "Invalid input, depth should be an integer"
                 self.askForDepthEvaluation()
-            if depth >= 0 and depth < 20:
+            if depth >= 0 and depth <= 20:
                 self.solution.depth = depth
             else:
                 print"Invalid input, depth shold be a number between 0 and 20"
                 self.askForDepthEvaluation()
 
     def askForEvaluation(self):
-        """ Ask the user to evaluate the solution of the system"""
+        """ Ask the user to evaluate the solution of the system and returns
+            its choice
+        """
 
         if self.solution is None:
             print "No solution found to be evaluated"
@@ -722,8 +745,11 @@ class CBRProcessor():
         print "\n"
         print "Evaluation should be a number between 0 and 1. The system will"
         print "add the case to the database if the evaluation is over 0.7"
+
+        if self.evaluation != None:
+            print "Current evaluation of the solution:", self.evaluation
         
-        evaluation = raw_input("Evaluation result (press enter for skip): ")
+        evaluation = raw_input("Evaluation result (press enter to skip): ")
 
         if evaluation != '':
             try:
@@ -745,45 +771,52 @@ class CBRProcessor():
             return None
 
         if askEvaluation:
-            evaluationResult = askForEvaluation()
+            evaluationResult = self.askForEvaluation()
+            if evaluationResult is not None:
+                self.evaluation = evaluationResult
+                return None
 
-        if not askEvaluation or evaluationResult is None:
-            if self.query.depth is None:
+        if self.query.depth is None:
+            depthConsistency = None
+        else:
+            if self.solution.depth is None and askDepth:
+                self.askForDepthEvaluation() 
+            if self.solution.depth is None:
                 depthConsistency = None
-            elif self.solution.depth is None:
-                if askDepth:
-                    askForDepthEvaluation()
-                if self.solution.depth is None:
-                    depthConsistency = None
-            else: 
-                if self.currentPlay.depth > self.solution.depth:
+            else:
+                if self.solution.depth > self.solution.depth:
                     depthConsistency = 1
                 else:
                     depthConsistency = 0
 
-            if self.currentPlay.checkForConsistenty(self.solution):
-                playConsistency = 1
-            else:
-                playConsistency = 0
+        if self.solution.checkForConsistenty(self.solution):
+            playConsistency = 1
+        else:
+            playConsistency = 0
 
-            if depthConsistency == None:
-                print "\n Warning: Depth-consistency cannot be evalued \n"
-                depthConsistency = 0
+        if depthConsistency is None:
+            print "\n Warning: Depth-consistency cannot be evalued \n"
+            depthConsistency = 0
 
-            evaluationResult = 0.5 * (depthConsistency + playConsistency)
+        evaluationResult = 0.5 * (depthConsistency + playConsistency)
 
-        return evaluationResult
+        self.evaluation = evaluationResult
 
-    def finishCurrentQuery(self, askForDepth=True, askEvaluation=False):
+    def finishCurrentQuery(self, askEvaluation=False, askDepth=True):
         """ Terminates the current query. If a solution is defined, it is 
             evaluated and returned. If evaluation perform is over 0.5, the 
             solution is, in addition, added to the cache database.
         """
-        print "\n\nQuery terminated ------"
+        if self.solution != None and self.evaluation == None:
+            e = self.getEvaluationMeasure(askEvaluation, askDepth)
+            self.evaluation = e
+
+        print "\n"
+        print "Query terminated ------"
         print "    Introduced Query:", self.query
 
         if self.solution != None:
-            evaluation = self.getEvaluationMeasure(askForDepth, askDepth)
+            evaluation = self.getEvaluationMeasure(askEvaluation, askDepth)
 
             print "    Proposed Solution:", self.solution
 
@@ -796,9 +829,9 @@ class CBRProcessor():
                     print "the changes before close the system to permanently"
                     print "add the stored cases to the database."
 
-        self.__str__() 
+        self.__init__(self.FLib, self.RLib) 
 
-        print "\nPlease, add a new query to start again."
+        print "\n\n\nPlease, add a new query to start again."
 
     def saveCache(self):
         """ Adds cases in cache to the permanent database files """
