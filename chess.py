@@ -13,7 +13,8 @@ COLNAMES = {1: 'a', 2: 'b', 3: 'c', 4: 'd', 5: 'e', 6: 'f', 7: 'g', 8: 'h'}
 DEPTH2NUM = {'draw': -1, 'zero': 0, 'one': 1, 'two': 2, 'three': 3, 
              'four': 4, 'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 
              'nine': 9, 'ten': 10, 'eleven': 11, 'twelve': 12, 
-             'thirteen': 13, 'fourteen': 14, 'fifteen': 15, 'sixteen': 16}
+             'thirteen': 13, 'fourteen': 14, 'fifteen': 15, 'sixteen': 16,
+             'unknown': None}
 
 DEPTH2CAT = {-1: 'draw', 0: 'zero', 1: 'one', 2: 'two', 3: 'three', 
               4: 'four', 5: 'five', 6: 'six', 7: 'seven', 8: 'eight', 
@@ -31,6 +32,10 @@ class Play():
         """ Input for initialise: a list with the positions of the peaces 
               with ordering [WKingX, WKingY, WRookX, WRookY, BKingX, BKingY]
         """
+        for p in positions:
+            if p < 1 or p > 9:
+                print "Warning: illegal position entered"
+
         self.data = positions
         self.depth = depth
         self.gauge = self.getGauge()
@@ -69,17 +74,19 @@ class Play():
         return '(' + COLNAMES[self.BKingX()] + ',' + str(self.BKingY())+ ')'
 
     def strForStoring(self):
-        L =  str(self.data[0]) + ',' + str(self.data[1]) + ','
-        L += str(self.data[2]) + ',' + str(self.data[3]) + ','
-        L += str(self.data[4]) + ',' + str(self.data[5]) + ',' 
-        L += str(self.depth)
+        L =  COLNAMES[self.data[0]] + ',' + str(self.data[1]) + ','
+        L += COLNAMES[self.data[2]] + ',' + str(self.data[3]) + ','
+        L += COLNAMES[self.data[4]] + ',' + str(self.data[5]) + ',' 
+        if self.depth is None:
+            L += "unknown"
+        else:
+            L += DEPTH2CAT[self.depth]
         return L
 
     def getReducedRepresentation(self):
         """ Returns an invariant-under-simmertries representation of the play
             as an ReducedPlay object
         """
-
         distToX = min(abs(9 - self.BKingX()), self.BKingX())
         distToY = min(abs(9 - self.BKingY()), self.BKingY())
         BKingWKingX = self.BKingX() - self.WKingX()
@@ -156,18 +163,58 @@ class ReducedPlay():
         L += str(self.depth)
         return L
 
+    def distToX(self):
+        return self.data[0]
+
+    def distToY(self):
+        return self.data[1]
+
+    def BKingWKingX(self):
+        return self.data[2]
+
+    def BKingWKingY(self):
+        return self.data[3]
+    
+    def BKingWRookX(self):
+        return self.data[4]
+    
+    def BKingWRookY(self):
+        return self.data[5]
+
+    def WKingWRookX(self):
+        return self.data[6]
+    
+    def WKingWRookY(self):
+        return self.data[7]
+
+    def strForStoring(self):
+        L =  str(self.data[0]) + ',' + str(self.data[1]) + ','
+        L += str(self.data[2]) + ',' + str(self.data[3]) + ','
+        L += str(self.data[4]) + ',' + str(self.data[5]) + ',' 
+        L += str(self.data[6]) + ',' + str(self.data[7]) + ',' 
+        if self.depth is None:
+            L += "unknown"
+        else:
+            L += DEPTH2CAT[self.depth]
+        return L
+
     def projectOriginalRepresentation(self, gauge):
         """ Returns the plau in the original representation (Play object)"""
-        BKingX = abs(9 * gauge[0] - self.data[0])
-        BKingY = abs(9 * gauge[1] - self.data[1])
-        WKingX = BKingX + self.data[2]
-        WKingY = BKingY + self.data[3]
-        WRookX = BKingX + self.data[4]
-        WRookY = BKingY + self.data[5]
-        ConvertedPlay = [BKingX, BKingY, WKingX, WKingY, WRookX, WRookY]
+        if gauge[0] == 0:
+            BKingX = self.distToX()
+            BKingY = self.distToY()
+        else:
+            BKingX = 9 - self.distToX()
+            BKingY = 9 - self.distToY()            
 
-        return Play(ConvertedPlay,self.depth) 
+        WKingX = BKingX - self.BKingWKingX()
+        WKingY = BKingY - self.BKingWKingY()
+        WRookX = BKingX - self.BKingWRookX()
+        WRookY = BKingY - self.BKingWRookY()
 
+        convertedData = [BKingX, BKingY, WKingX, WKingY, WRookX, WRookY]
+
+        return Play(convertedData,self.depth) 
 
 
 class PlayCase():
@@ -176,13 +223,23 @@ class PlayCase():
         self.currentPlay = play
         self.solution = solution
 
+    def __str__():
+        pLit = "Problem: " + str(self.currentPlay)
+        sLit = "Solution: " + str(self.solution)
+        return pLit + "\n" + sLit
+
     def addToFile(self, filename):
         f = open(filename, 'a')
-        f.write(self.data.strForStoring())
+        f.write(self.currentPlay.strForStoring())
         f.write('\n')
         f.write(self.solution.strForStoring())
         f.write('\n\n')
         f.close()
+
+    def getReducedRepresentation(self):
+        rp = self.currentPlay.getReducedRepresentation()
+        rc = self.solution.getReducedRepresentation()
+        return ReducedPlayCase(rp, rc)
 
 
 
@@ -194,7 +251,7 @@ class ReducedPlayCase():
 
     def addToFile(self, filename):
         f = open(filename, 'a')
-        f.write(self.data.strForStoring())
+        f.write(self.currentPlay.strForStoring())
         f.write('\n')
         f.write(self.solution.strForStoring())
         f.write('\n\n')
@@ -254,9 +311,8 @@ class PlayCaseLib(cbr.CaseLibrary):
 
             currentSolutionPlay = Play(v,d)
 
-            if currentSolutionPlay.data != currentProblemPlay.data:
-                c = PlayCase(currentProblemPlay, currentSolutionPlay)
-                self.addCase(c)
+            c = PlayCase(currentProblemPlay, currentSolutionPlay)
+            self.addCase(c)
 
             f.readline()
             line = f.readline()
@@ -295,6 +351,7 @@ class ReducedPlayCaseLib(cbr.CaseLibrary):
         while line != '':
             #Converts data in Numeric format
             fields = line.split(",")
+            fields[8] = DEPTH2NUM[(fields[8])[0:-1]] 
             for i in fields:
                 v.append(int(i))
             d = v.pop()
@@ -303,17 +360,15 @@ class ReducedPlayCaseLib(cbr.CaseLibrary):
 
             line = f.readline()
             fields = line.split(",")
+            fields[8] = DEPTH2NUM[(fields[8])[0:-1]] 
             for i in fields:
                 v.append(int(i))
             d = v.pop()
             currentSolutionPlay = ReducedPlay(v,d)
             v = []
 
-
-            if currentSolutionPlay.data != currentProblemPlay.data:
-                c = ReducedPlayCase(currentProblemPlay, currentSolutionPlay)
-                self.addCase(c)
-
+            c = ReducedPlayCase(currentProblemPlay, currentSolutionPlay)
+            self.addCase(c)
 
             f.readline()
             line = f.readline()
@@ -352,18 +407,8 @@ class CBRProcessor():
 
         self.solvedCasesCache = []
         self.heart = "Unicorns and other happy tender things"
-
-        self.query = None
-        self.retrievedCases = []
-        self.retrievedDistances = []
-        self.solution = None
-        self.evaluation = None
-
-        # Default parameters of the CBR
-        self.k = 3
-        self.W = BASE_W
-        self.method = 2
-        self.coherence = True
+        self.intialiseQueryVariables()
+        self.setDefaultParameters()
 
     def __str__(self):
         print "CBR Processor:"
@@ -375,6 +420,21 @@ class CBRProcessor():
         print "        adaptation method:", self.method
         print "       preserve coherence:", self.coherence
         print "    Solved cases in cache:", self.solvedCasesCache, "\n"
+
+    def intialiseQueryVariables(self):
+        """ Cleans the query-specific parameters """
+        self.query = None
+        self.retrievedCases = []
+        self.retrievedDistances = []
+        self.solution = None
+        self.evaluation = None
+
+    def setDefaultParameters(self):
+        """ Set the CBR parameters to default """
+        self.k = 3
+        self.W = BASE_W
+        self.method = 2
+        self.coherence = True
 
     def readFDatabaseFromFiles(self, FullLibraryFile):
         self.FLib = PlayCaseLib()
@@ -499,18 +559,34 @@ class CBRProcessor():
             method = askForMethod()
             self.method = method
 
+    def solveQuery(self, query, saveResultsIntoDabase=False):
+        """ Solves a new query performing the whole CBR cycle"""
+        self.performNewQuery(query)
+        self.performRetrieval()
+        self.adaptSolution()
+        self.evaluateSolution()
+
+        results = [self.solution, self.evaluation]
+
+        self.finishCurrentQuery()
+
+        if saveResultsIntoDabase:
+            self.saveCache()
+
+        return results
+
     def performRetrieval(self):
         """ Performs the retrieval using the parameters of the CBR. Retrieved 
             cases and their distances to the query are stored in the object.
         """ 
+        print "Retrieving similar cases..."
+
         kNNIndices, self.retrievedDistances = self.kNN()
-        # print self.FLib.cases[kNNIndices[1]].currentPlay.data
-        
+
         gauge = self.query.gauge
 
         rC = [self.RLib.cases[x].projectOriginalRepresentation(gauge)
                  for x in kNNIndices]
-        # print rC[1].currentPlay.data
 
         self.retrievedCases = rC
 
@@ -567,17 +643,17 @@ class CBRProcessor():
 
     def adaptSolution(self):
         """ Uses retrieved cases to construct a solution for the query """
-
+        print "Adapting solution space..."
         if self.method == 0:
-            print "Adaptation method: Lazy Adaptation"
+            print "    Adaptation method: Lazy Adaptation"
             self.lazyAdaptation()
 
         elif self.method == 1:
-            print "Adaptation method: Less-depth Solution"
+            print "    Adaptation method: Less-depth Solution"
             self.adaptByLessDepth()
 
         elif self.method == 2:
-            print "Adaptation method: Adapt by Averaging"
+            print "    Adaptation method: Adapt by Averaging"
             self.adaptByAveraging()
 
         elif self.method >= 3:
@@ -599,6 +675,8 @@ class CBRProcessor():
                 consistency = self.askForConsistency()
             else:
                 self.solution = solution
+
+        print "   ...done!\n"
 
     def lazyAdaptation(self):
         """ Do not perform adaptation (i.e. sets as solution the solution of 
@@ -680,6 +758,8 @@ class CBRProcessor():
         if self.query.checkForConsistenty(intFields):
             return Play(intFields)
 
+        print "        Forcing consistency over the found solution..."
+
         # Generating candidates
         #         WKingX   WKingY   WRook(x,y)    BKing(x,y)
         cands = [[qF[0] + 1, qF[1], qF[2], qF[3], qF[4], qF[5]],
@@ -710,12 +790,11 @@ class CBRProcessor():
     def askForDepthEvaluation(self):
         """ Ask the user to evalue the depth (i.e. number of movement until 
             checkmate) of a proposed solution """
-        print "\n\nPlease, evalue the following play (blacks to move):"
+        print "\nPlease, evalue the following play (blacks to move):\n"
         print self.solution
-        print "\n"
         
-        depth = raw_input("Estimated depth (press enter for skip): ")
-        print "\n"
+        depth = raw_input("--> Estimated depth (press enter for skip): ")
+        print ""
 
         if depth != '':
             try:
@@ -749,7 +828,7 @@ class CBRProcessor():
         if self.evaluation != None:
             print "Current evaluation of the solution:", self.evaluation
         
-        evaluation = raw_input("Evaluation result (press enter to skip): ")
+        evaluation = raw_input("--> Evaluation result (press enter to skip):")
 
         if evaluation != '':
             try:
@@ -763,8 +842,10 @@ class CBRProcessor():
                 print"Invalid input, evaluation shold be between 0 and 1"
                 self.askForDepthEvaluation()
 
-    def getEvaluationMeasure(self, askEvaluation=False, askDepth=True):
+    def evaluateSolution(self, askEvaluation=False, askDepth=True):
         """ Performs evaluation of the solution stored in the system"""
+
+        print "Evaluating Solution..."
 
         if self.solution is None:
             print "No solution found to be evaluated"
@@ -784,12 +865,12 @@ class CBRProcessor():
             if self.solution.depth is None:
                 depthConsistency = None
             else:
-                if self.solution.depth > self.solution.depth:
+                if self.query.depth > self.solution.depth:
                     depthConsistency = 1
                 else:
                     depthConsistency = 0
 
-        if self.solution.checkForConsistenty(self.solution):
+        if self.query.checkForConsistenty(self.solution):
             playConsistency = 1
         else:
             playConsistency = 0
@@ -808,30 +889,32 @@ class CBRProcessor():
             solution is, in addition, added to the cache database.
         """
         if self.solution != None and self.evaluation == None:
-            e = self.getEvaluationMeasure(askEvaluation, askDepth)
+            e = self.evaluateSolution(askEvaluation, askDepth)
             self.evaluation = e
 
-        print "\n"
         print "Query terminated ------"
         print "    Introduced Query:", self.query
 
         if self.solution != None:
-            evaluation = self.getEvaluationMeasure(askEvaluation, askDepth)
+            self.evaluateSolution(askEvaluation, askDepth)
 
             print "    Proposed Solution:", self.solution
+            print "    Quality of solution:", str(self.evaluation)+"/1.0"
 
-            if evaluation != None:
-                print "    Evaluation of the result:", round(evaluation,2)            
-                if evaluation >= 0.7:
-                    finalCase = Case(self.query, self.solution)
+            if self.evaluation != None:
+                print "    Evaluation of the result:",round(self.evaluation,2)            
+                if self.evaluation >= 0.7:
+                    finalCase = PlayCase(self.query, self.solution)
                     self.solvedCasesCache.append(finalCase)
+                    print ""
                     print "Case was stored in cache. Please, remember to save" 
                     print "the changes before close the system to permanently"
                     print "add the stored cases to the database."
 
-        self.__init__(self.FLib, self.RLib) 
+        print "------------------------"
+        print " \n\nPlease, add a new query to start again."
 
-        print "\n\n\nPlease, add a new query to start again."
+        self.intialiseQueryVariables()
 
     def saveCache(self):
         """ Adds cases in cache to the permanent database files """
@@ -840,17 +923,3 @@ class CBRProcessor():
             rcase = case.getReducedRepresentation()
             self.FLib.storeCase(case)
             self.RLib.storeCase(rcase)
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -11,11 +11,12 @@ RLibFile = 'data/symetricDB'
 
 yoda = chess.CBRProcessor(FLibFile, RLibFile)
 
+yoda.setAdaptationMethod(0)
+
 query = chess.Play([3, 4, 3, 6, 1, 1], 10)
 
-yoda.performNewQuery(query)
-
-print "Problem:", yoda.query, "\n"
+r = yoda.solveQuery(query, True)
+print r[0]
 
 # print "Welcome to 'Blabla Bla CBR Processor \n"
  
@@ -27,21 +28,4 @@ print "Problem:", yoda.query, "\n"
 # else:
 #     print "Invalid input, ansewer should be a Yes or No\n"
 
-yoda.performRetrieval()
-
-# print yoda.retrievedCases[1].currentPlay
-
-# nretrieved = len(yoda.retrievedCases)
-#print "Retrieved ", nretrieved, " cases. Distances:", yoda.retrievedDistances
-
-# yoda.printRetrievedCases()
-
-yoda.setAdaptationMethod(0)
-yoda.setConsistencyPolicy(True)
-
-yoda.adaptSolution()
-
-#print "Solution: ", yoda.solution
-
-yoda.finishCurrentQuery()
-
+print yoda.solvedCasesCache
